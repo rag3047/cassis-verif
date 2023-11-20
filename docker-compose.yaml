@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+    web:
+        build: .
+        image: cassis-verif:0.0.1-dev
+        env_file:
+            - .env
+        ports:
+            - "80:80"
+        volumes:
+            - data:/cassis-verif/data
+
+volumes:
+    data:
