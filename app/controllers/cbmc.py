@@ -35,7 +35,7 @@ class CBMCProof(BaseModel):
 @router.get("/proofs")
 async def get_cbmc_proofs() -> list[CBMCProof]:
     """Return list of CBMC proofs."""
-    log.info("Reading proofs from disk")
+    log.info("Listing all CBMC proofs")
 
     proofs = [
         dir
@@ -66,7 +66,7 @@ async def get_cbmc_proofs() -> list[CBMCProof]:
 async def create_cbmc_proof(proof: CBMCProof) -> CBMCProof:
     """Create a CBMC proof for function func_name in source file src_file."""
 
-    log.info("Creating CBMC proof")
+    log.info(f"Creating CBMC proof '{proof.name}'")
     proof_dir = Path(PROOF_ROOT) / proof.name
 
     try:
@@ -103,6 +103,7 @@ async def create_cbmc_proof(proof: CBMCProof) -> CBMCProof:
 )
 async def delete_cbmc_proof(proof_name: str) -> None:
     """Delete CBMC proof."""
+    log.info(f"Deleting CBMC proof '{proof_name}'")
 
     if CBMC_PROOFS_TASK is not None:
         raise HTTPException(
@@ -118,6 +119,49 @@ async def delete_cbmc_proof(proof_name: str) -> None:
 
     except FileNotFoundError:
         pass
+
+
+@router.get(
+    "/proofs/{proof_name}/files",
+    responses={404: {"model": HTTPError}},
+)
+async def get_proof_files(proof_name: str) -> list[Path]:
+    """Return list of all files in proof directory."""
+    log.info(f"Listing all files for proof '{proof_name}'")
+
+    proof_dir = Path(PROOF_ROOT) / proof_name
+
+    if not proof_dir.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
+
+    return [
+        # TODO
+        file.relative_to(proof_dir)
+        for file in proof_dir.rglob("*")
+        if file.is_file() and not file.name.startswith(".")
+    ]
+
+
+@router.get(
+    "/proofs/{proof_name}/files/{file_name:path}",
+    response_class=FileResponse,
+    responses={404: {"model": HTTPError}},
+)
+async def get_proof_file(proof_name: str, file_name: str) -> FileResponse:
+    """Return file content from proof directory."""
+    log.info(f"Reading file '{file_name}' from proof '{proof_name}'")
+
+    proof_dir = Path(PROOF_ROOT) / proof_name
+
+    if not proof_dir.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
+
+    file_path = proof_dir / file_name
+
+    if not file_path.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, "File not found")
+
+    return FileResponse(file_path)
 
 
 @router.post("/proofs/download")

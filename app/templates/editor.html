@@ -15,10 +15,13 @@
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
         <script>
             require.config({ paths: { vs: "{{ url_for('static', path='monaco-editor/min/vs') }}" } });
-            require(["vs/editor/editor.main"], function () {
+            require(["vs/editor/editor.main"], async function () {
+                const code = await fetch("api/v1/cbmc/proofs/{{ proof_name }}/files/{{ file_name }}").then((response) =>
+                    response.text()
+                );
+
                 const editor = monaco.editor.create(document.getElementById("container"), {
-                    // TODO: find a better way to pass files to the editor...
-                    value: "{{ harness_file | json_encode }}",
+                    value: code,
                     language: "c",
                     theme: "vs-dark",
                 });

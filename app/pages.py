@@ -89,6 +89,7 @@ async def editor(request: Request) -> HTMLResponse:
 
     context = {
         "request": request,
-        "harness_file": harness_file.read_text(),
+        "proof_name": proof_name,
+        "file_name": harness + ".c",
     }
     return templates.TemplateResponse("editor.html", context)
