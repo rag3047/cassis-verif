@@ -1,7 +1,7 @@
-from typing import Literal
+from typing import Literal, Annotated
 from os import getenv, remove, linesep
 from logging import getLogger
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Body
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
@@ -121,6 +121,10 @@ async def delete_cbmc_proof(proof_name: str) -> None:
         pass
 
 
+# TODO: move file related stuff to separate controller
+# TODO: add endpoint to add new file/folder to proof/include/stubs/sources
+
+
 @router.get(
     "/proofs/{proof_name}/files",
     responses={404: {"model": HTTPError}},
@@ -134,12 +138,13 @@ async def get_proof_files(proof_name: str) -> list[Path]:
     if not proof_dir.exists():
         raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
 
-    return [
-        # TODO
+    return sorted(
         file.relative_to(proof_dir)
-        for file in proof_dir.rglob("*")
-        if file.is_file() and not file.name.startswith(".")
-    ]
+        for file in proof_dir.iterdir()
+        if file.is_file()
+        and not file.name == "cbmc-proof.txt"
+        and not file.name == "cbmc-viewer.json"
+    )
 
 
 @router.get(
@@ -147,7 +152,7 @@ async def get_proof_files(proof_name: str) -> list[Path]:
     response_class=FileResponse,
     responses={404: {"model": HTTPError}},
 )
-async def get_proof_file(proof_name: str, file_name: str) -> FileResponse:
+async def download_proof_file(proof_name: str, file_name: str) -> FileResponse:
     """Return file content from proof directory."""
     log.info(f"Reading file '{file_name}' from proof '{proof_name}'")
 
@@ -164,8 +169,31 @@ async def get_proof_file(proof_name: str, file_name: str) -> FileResponse:
     return FileResponse(file_path)
 
 
+@router.post(
+    "/proofs/{proof_name}/files/{file_name:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+)
+async def upload_proof_file(
+    proof_name: str,
+    file_name: str,
+    content: Annotated[str, Body()],
+) -> None:
+    """Upload file to proof directory."""
+    log.info(f"Uploading file '{file_name}' to proof '{proof_name}'")
+
+    proof_dir = Path(PROOF_ROOT) / proof_name
+
+    if not proof_dir.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
+
+    file_path = proof_dir / file_name
+
+    with open(file_path, "w") as file:
+        file.write(content)
+
+
 @router.post("/proofs/download")
-async def download_cmbc_proofs(
+async def download_all_proofs(
     tasks: BackgroundTasks,
     format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
 ) -> FileResponse:

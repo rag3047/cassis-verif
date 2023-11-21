@@ -1,5 +1,4 @@
 import re
-import json
 
 from os import getenv
 from fastapi import APIRouter, Request, HTTPException
@@ -10,7 +9,7 @@ from pathlib import Path
 from logging import getLogger
 
 from .controllers.git import get_git_config
-from .controllers.cbmc import get_cbmc_proofs
+from .controllers.cbmc import get_cbmc_proofs, get_proof_files
 from .controllers.ctags import get_functions
 
 log = getLogger(__name__)
@@ -18,7 +17,7 @@ log = getLogger(__name__)
 PROOF_ROOT = getenv("PROOF_ROOT")
 
 templates = Jinja2Templates(directory="app/templates", undefined=ChainableUndefined)
-templates.env.filters["json_encode"] = json.dumps
+# templates.env.filters["json_encode"] = json.dumps
 # templates.env.globals["project_name"] = "CBMC Starter Kit"
 pages = APIRouter()
 
@@ -89,6 +88,7 @@ async def editor(request: Request) -> HTMLResponse:
 
     context = {
         "request": request,
+        "files": await get_proof_files(proof_name),
         "proof_name": proof_name,
         "file_name": harness + ".c",
     }

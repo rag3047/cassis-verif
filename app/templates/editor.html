@@ -6,26 +6,83 @@
         <title></title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="" />
     </head>
     <body>
         <a href="{{ url_for('home') }}">Home</a>
+        <select onchange="onChanged(event)">
+            {% for file in files %}
+            <option {{ "selected" if file|string == file_name }} value="{{ file }}">{{ file }}</option>
+            {% endfor %}
+        </select>
+
         <div id="container" style="width: 800px; height: 600px; border: 1px solid grey"></div>
+        <button onclick="save_file(event)">Save</button>
 
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
         <script>
+            let editor;
+            let has_unsaved_changes = false;
+
+            window.addEventListener("beforeunload", event => {
+                if (has_unsaved_changes) {
+                    event.preventDefault();
+                    event.returnValue = true;
+                }
+            });
+
             require.config({ paths: { vs: "{{ url_for('static', path='monaco-editor/min/vs') }}" } });
             require(["vs/editor/editor.main"], async function () {
-                const code = await fetch("api/v1/cbmc/proofs/{{ proof_name }}/files/{{ file_name }}").then((response) =>
-                    response.text()
-                );
+                const url = "{{ url_for('download_proof_file', proof_name=proof_name, file_name=file_name) }}";
 
-                const editor = monaco.editor.create(document.getElementById("container"), {
-                    value: code,
-                    language: "c",
+                const code = await fetch(url).then((response) => response.text());
+                const model = monaco.editor.createModel(code, "c", url);
+
+                editor = monaco.editor.create(document.getElementById("container"), {
                     theme: "vs-dark",
+                    model: model,
                 });
+
+                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, function(event) {
+                    // TODO: fix this
+                    console.log(event)
+                    console.log("save");
+                })
+
+                editor.onDidChangeModelContent(function(event) {
+                    has_unsaved_changes ||= true;
+                })
             });
+
+            async function onChanged(event) {
+                const url = "{{ url_for('download_proof_file', proof_name=proof_name, file_name='') }}" + event.target.value;
+
+                const code = await fetch(url).then((response) =>response.text());
+                let model = monaco.editor.getModel(url);
+
+                if (!model) {
+                    const ext = "." + event.target.value.split(".").pop();
+                    const language = monaco.languages.getLanguages().find(lang => lang.extensions?.includes(ext))?.id ?? "plaintext"; 
+                    model = monaco.editor.createModel(code, language, url);
+                }
+
+                editor.setModel(model);
+            }
+
+            async function save_file(event) {
+                const model = editor.getModel();
+
+                const response = await fetch(model.uri, {
+                    method: "POST",
+                    body: model.getValue(),
+                });
+
+                if (response.ok) {
+                    alert("Saved");
+                    has_unsaved_changes = false;
+                } else {
+                    alert("Error");
+                }
+            }
         </script>
     </body>
 </html>
