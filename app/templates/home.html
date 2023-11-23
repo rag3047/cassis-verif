@@ -47,9 +47,9 @@
         <div class="git-config">
             <h1>Git-Config</h1>
             <label for="#git-remote">Remote:</label>
-            <input id="git-remote" type="text" value="{{ git_config.remote }}" />
+            <input id="git-remote" type="text" value="{{ git_config.remote | default('', true) }}" />
             <label for="#git-branch">Branch:</label>
-            <input id="git-branch" type="text" value="{{ git_config.branch }}" />
+            <input id="git-branch" type="text" value="{{ git_config.branch | default('', true) }}" />
             <label for="#git-user">Username:</label>
             <input id="git-user" type="text" value="{{ git_config.username | default('', true) }}" />
             <label for="#git-password">Password:</label>
@@ -164,6 +164,7 @@
                         (proof) =>
                             `<li>${proof.name} (${proof.src})
                                 <a data-name="${proof.name}" href="" onclick="delete_proof(event)">remove</a>
+                                <a href="{{ url_for('editor') }}?proof_name=${proof.name}">edit</a>
                             </li>`
                     )
                     .join("");

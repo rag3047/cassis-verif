@@ -33,7 +33,7 @@ WORKDIR /cassis-verif
 
 RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-jinja2 universal-ctags bash-completion \
-    ninja-build gnuplot graphviz git wget \
+    ninja-build gnuplot graphviz git wget doxygen \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-20.04-cbmc-5.95.1-Linux.deb -q \
@@ -44,6 +44,7 @@ RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-2
 # Extract tar files in includes dir
 ADD includes/* includes/
 COPY cbmc-setup-noninteractive.py cbmc-setup-noninteractive.py
+COPY Doxyfile Doxyfile
 
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

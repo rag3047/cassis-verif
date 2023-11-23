@@ -24,10 +24,16 @@ pages = APIRouter()
 
 @pages.route("/")
 async def home(request: Request) -> HTMLResponse:
+    try:
+        git_config = await get_git_config()
+
+    except HTTPException as e:
+        git_config = None
+
     context = {
         "request": request,
         "proofs": await get_cbmc_proofs(),
-        "git_config": await get_git_config(),
+        "git_config": git_config,
         "functions": await get_functions(limit=5),
     }
     return templates.TemplateResponse("home.html", context)

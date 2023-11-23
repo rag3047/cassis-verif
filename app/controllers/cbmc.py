@@ -287,7 +287,11 @@ async def get_cbmc_verification_task_results(
     return FileResponse(path)
 
 
-@router.delete("/task", status_code=HTTPStatus.NO_CONTENT)
+@router.delete(
+    "/task",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={409: {"model": HTTPError}},
+)
 async def cancel_cbmc_verification_task() -> None:
     """Cancel CBMC verification task"""
     global CBMC_PROOFS_TASK

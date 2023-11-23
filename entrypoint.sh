@@ -33,4 +33,8 @@ fi
 tar -xf /cassis-verif/src.tar.gz -C data
 # END DEV
 
+# Build doxygen docs because it is not persisted across containers
+echo "Entrypoint: Building doxygen documentation"
+doxygen /cassis-verif/Doxyfile > /dev/null
+
 exec "$@"
