@@ -121,97 +121,6 @@ async def delete_cbmc_proof(proof_name: str) -> None:
         pass
 
 
-# TODO: move file related stuff to separate controller
-# TODO: add endpoint to add new file/folder to proof/include/stubs/sources
-
-
-@router.get(
-    "/proofs/{proof_name}/files",
-    responses={404: {"model": HTTPError}},
-)
-async def get_proof_files(proof_name: str) -> list[Path]:
-    """Return list of all files in proof directory."""
-    log.info(f"Listing all files for proof '{proof_name}'")
-
-    proof_dir = Path(PROOF_ROOT) / proof_name
-
-    if not proof_dir.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
-
-    return sorted(
-        file.relative_to(proof_dir)
-        for file in proof_dir.iterdir()
-        if file.is_file()
-        and not file.name == "cbmc-proof.txt"
-        and not file.name == "cbmc-viewer.json"
-    )
-
-
-@router.get(
-    "/proofs/{proof_name}/files/{file_name:path}",
-    response_class=FileResponse,
-    responses={404: {"model": HTTPError}},
-)
-async def download_proof_file(proof_name: str, file_name: str) -> FileResponse:
-    """Return file content from proof directory."""
-    log.info(f"Reading file '{file_name}' from proof '{proof_name}'")
-
-    proof_dir = Path(PROOF_ROOT) / proof_name
-
-    if not proof_dir.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
-
-    file_path = proof_dir / file_name
-
-    if not file_path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "File not found")
-
-    return FileResponse(file_path)
-
-
-@router.post(
-    "/proofs/{proof_name}/files/{file_name:path}",
-    status_code=HTTPStatus.NO_CONTENT,
-)
-async def upload_proof_file(
-    proof_name: str,
-    file_name: str,
-    content: Annotated[str, Body()],
-) -> None:
-    """Upload file to proof directory."""
-    log.info(f"Uploading file '{file_name}' to proof '{proof_name}'")
-
-    proof_dir = Path(PROOF_ROOT) / proof_name
-
-    if not proof_dir.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Proof not found")
-
-    file_path = proof_dir / file_name
-
-    with open(file_path, "w") as file:
-        file.write(content)
-
-
-@router.post("/proofs/download")
-async def download_all_proofs(
-    tasks: BackgroundTasks,
-    format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
-) -> FileResponse:
-    """Download all CBMC proofs."""
-    log.info("Downloading CBMC proofs")
-
-    abs_file_path = make_archive("cbmc-proofs", format, PROOF_ROOT)
-    log.debug(f"Archive file created: '{abs_file_path}'")
-
-    # register task to delete archive after download
-    tasks.add_task(_cleanup_archive_file, abs_file_path)
-
-    return FileResponse(
-        abs_file_path,
-        filename=Path(abs_file_path).name,
-    )
-
-
 # ------------------------------------------------------------
 # CBMC Task Execution
 # ------------------------------------------------------------
@@ -306,12 +215,6 @@ async def cancel_cbmc_verification_task() -> None:
 # ------------------------------------------------------------
 # Utils
 # ------------------------------------------------------------
-
-
-def _cleanup_archive_file(abs_file_path: str) -> None:
-    """Delete archive file."""
-    log.debug(f"Cleanup archive file after download: {abs_file_path}")
-    remove(abs_file_path)
 
 
 async def _cleanup_task_when_done() -> None:

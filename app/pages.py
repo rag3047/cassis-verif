@@ -9,7 +9,7 @@ from pathlib import Path
 from logging import getLogger
 
 from .controllers.git import get_git_config
-from .controllers.cbmc import get_cbmc_proofs, get_proof_files
+from .controllers.cbmc import get_cbmc_proofs
 from .controllers.ctags import get_functions
 
 log = getLogger(__name__)
@@ -94,7 +94,7 @@ async def editor(request: Request) -> HTMLResponse:
 
     context = {
         "request": request,
-        "files": await get_proof_files(proof_name),
+        # "files": await get_proof_files(proof_name),
         "proof_name": proof_name,
         "file_name": harness + ".c",
     }

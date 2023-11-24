@@ -6,6 +6,8 @@
         <title></title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="{{ url_for('static', path='tree-js/tree.js') }}"></script>
+        <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.css') }}" />
     </head>
     <body>
         <a href="{{ url_for('home') }}">Home</a>
@@ -15,6 +17,7 @@
             {% endfor %}
         </select>
 
+        <div id="dir-tree"></div>
         <div id="container" style="width: 800px; height: 600px; border: 1px solid grey"></div>
         <button onclick="save_file(event)">Save</button>
 
@@ -83,6 +86,14 @@
                     alert("Error");
                 }
             }
+
+            const root = new TreeNode("root");
+            const dir = new TreeNode("dir");
+            const leaf = new TreeNode("leaf");
+            root.addChild(dir);
+            dir.addChild(leaf);
+
+            const tree = new TreeView(root, "#dir-tree");
         </script>
     </body>
 </html>
