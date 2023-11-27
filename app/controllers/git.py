@@ -147,3 +147,6 @@ async def pull_sources() -> None:
 
     except GitCommandError as e:
         raise HTTPException(HTTPStatus.CONFLICT, f"Failed to pull remote: {e}")
+
+
+# TODO: git status, git add, git commit, git push

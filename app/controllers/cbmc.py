@@ -1,11 +1,10 @@
-from typing import Literal, Annotated
-from os import getenv, remove, linesep
+from os import getenv, linesep
 from logging import getLogger
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Body
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
-from shutil import make_archive, rmtree
+from shutil import rmtree
 from http import HTTPStatus
 from cbmc_starter_kit import setup_proof
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE

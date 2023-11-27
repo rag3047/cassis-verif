@@ -42,6 +42,7 @@ RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-2
     && rm *cbmc*.deb *litani*.deb
 
 # Extract tar files in includes dir
+# TODO: move includes to data dir? or use FSW profiles? how to handle different architectures? rtems etc.
 ADD includes/* includes/
 COPY cbmc-setup-noninteractive.py cbmc-setup-noninteractive.py
 COPY Doxyfile Doxyfile
