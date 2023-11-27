@@ -160,6 +160,7 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> None:
 async def get_cbmc_verification_task_status() -> TaskStatus:
     """Return status of CBMC proof execution."""
     log.info("Get CBMC verification task status")
+    # TODO: transform this into a websocket endpoint
     return TaskStatus(is_running=CBMC_PROOFS_TASK is not None)
 
 

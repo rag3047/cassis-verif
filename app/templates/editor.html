@@ -6,27 +6,39 @@
         <title></title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script src="{{ url_for('static', path='tree-js/tree.js') }}"></script>
-        <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.css') }}" />
+        <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
     </head>
     <body>
-        <a href="{{ url_for('home') }}">Home</a>
-        <select onchange="onChanged(event)">
-            {% for file in files %}
-            <option {{ "selected" if file|string == file_name }} value="{{ file }}">{{ file }}</option>
-            {% endfor %}
-        </select>
+        <header>
+            <nav>
+                <a href="{{ url_for('home') }}">Home</a>
+            </nav>
+        </header>
 
-        <div id="dir-tree"></div>
-        <div id="container" style="width: 800px; height: 600px; border: 1px solid grey"></div>
-        <button onclick="save_file(event)">Save</button>
+        <aside id="dir-tree"></aside>
+        <main>
+            <!-- TODO: add header to main -->
+            <div id="editor"></div>
+            <div id="hints">
+                <h1>Hints</h1>
+                <ul>
+                    <li>Ctrl + S to save</li>
+                </ul>
+            </div>
+            <!-- <button onclick="save_file(event)">Save</button> -->
+        </main>
+        <!-- <footer>
+            <p>Output Console here</p>
+        </footer> -->
 
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
         <script>
             let editor;
             let has_unsaved_changes = false;
 
-            window.addEventListener("beforeunload", event => {
+            window.addEventListener("beforeunload", (event) => {
                 if (has_unsaved_changes) {
                     event.preventDefault();
                     event.returnValue = true;
@@ -35,36 +47,34 @@
 
             require.config({ paths: { vs: "{{ url_for('static', path='monaco-editor/min/vs') }}" } });
             require(["vs/editor/editor.main"], async function () {
-                const url = "{{ url_for('download_proof_file', proof_name=proof_name, file_name=file_name) }}";
-
-                const code = await fetch(url).then((response) => response.text());
-                const model = monaco.editor.createModel(code, "c", url);
-
-                editor = monaco.editor.create(document.getElementById("container"), {
+                editor = monaco.editor.create(document.getElementById("editor"), {
                     theme: "vs-dark",
-                    model: model,
+                    value: "",
+                    language: "plaintext",
                 });
 
-                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, function(event) {
+                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, function (event) {
                     // TODO: fix this
-                    console.log(event)
+                    console.log(event);
                     console.log("save");
-                })
+                });
 
-                editor.onDidChangeModelContent(function(event) {
+                editor.onDidChangeModelContent(function (event) {
                     has_unsaved_changes ||= true;
-                })
+                });
             });
 
-            async function onChanged(event) {
-                const url = "{{ url_for('download_proof_file', proof_name=proof_name, file_name='') }}" + event.target.value;
+            async function onChanged(path) {
+                const url = "{{ url_for('download_file', path='') }}" + path;
 
-                const code = await fetch(url).then((response) =>response.text());
+                const code = await fetch(url).then((response) => response.text());
                 let model = monaco.editor.getModel(url);
 
                 if (!model) {
-                    const ext = "." + event.target.value.split(".").pop();
-                    const language = monaco.languages.getLanguages().find(lang => lang.extensions?.includes(ext))?.id ?? "plaintext"; 
+                    const ext = "." + path.split(".").pop();
+                    const language =
+                        monaco.languages.getLanguages().find((lang) => lang.extensions?.includes(ext))?.id ??
+                        "plaintext";
                     model = monaco.editor.createModel(code, language, url);
                 }
 
@@ -87,13 +97,51 @@
                 }
             }
 
-            const root = new TreeNode("root");
-            const dir = new TreeNode("dir");
-            const leaf = new TreeNode("leaf");
-            root.addChild(dir);
-            dir.addChild(leaf);
+            async function build_directory_tree() {
+                const root = new TreeNode("root");
+                const entries = await fetch("{{ url_for('list_directory_tree') }}").then((res) => res.json());
 
-            const tree = new TreeView(root, "#dir-tree");
+                for (const entry of entries) {
+                    const parts = entry.path.split("/");
+                    const name = parts.pop();
+                    entry.toString = () => name;
+
+                    let parent = root;
+                    for (const part of parts) {
+                        const child = parent.getChildren().find((child) => child.getUserObject().toString() == part);
+
+                        if (child) {
+                            parent = child;
+                        } else {
+                            throw new Error("Invalid directory tree");
+                        }
+                    }
+
+                    const node = new TreeNode(entry, {
+                        allowChildren: entry.type == "dir",
+                        forceParent: entry.type == "dir",
+                        expanded: false,
+                    });
+
+                    if (entry.type == "file") {
+                        node.on("select", async (node) => {
+                            await onChanged(node.getUserObject().path);
+                        });
+                    }
+
+                    if (entry.type == "dir") {
+                        node.on("contextmenu", async (event, node) => {
+                            console.log("contextmenu", event, node);
+                        });
+                    }
+
+                    parent.addChild(node);
+                }
+
+                return new TreeView(root, "#dir-tree", { show_root: false });
+            }
+
+            build_directory_tree();
         </script>
     </body>
 </html>

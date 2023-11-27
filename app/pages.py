@@ -11,6 +11,7 @@ from logging import getLogger
 from .controllers.git import get_git_config
 from .controllers.cbmc import get_cbmc_proofs
 from .controllers.ctags import get_functions
+from .controllers.files import list_directory_tree
 
 log = getLogger(__name__)
 
@@ -24,6 +25,8 @@ pages = APIRouter()
 
 @pages.route("/")
 async def home(request: Request) -> HTMLResponse:
+    log.info("Rendering home page")
+
     try:
         git_config = await get_git_config()
 
@@ -41,6 +44,8 @@ async def home(request: Request) -> HTMLResponse:
 
 @pages.route("/results")
 async def results(request: Request) -> HTMLResponse:
+    log.info("Rendering results page")
+
     context = {
         "request": request,
     }
@@ -49,6 +54,8 @@ async def results(request: Request) -> HTMLResponse:
 
 @pages.route("/software-design-document")
 async def software_design_document(request: Request) -> HTMLResponse:
+    log.info("Rendering software design document page")
+
     context = {
         "request": request,
     }
@@ -57,6 +64,8 @@ async def software_design_document(request: Request) -> HTMLResponse:
 
 @pages.route("/doxygen")
 async def doxygen(request: Request) -> HTMLResponse:
+    log.info("Rendering doxygen page")
+
     context = {
         "request": request,
     }
@@ -65,45 +74,17 @@ async def doxygen(request: Request) -> HTMLResponse:
 
 @pages.route("/editor")
 async def editor(request: Request) -> HTMLResponse:
-    proof_name = request.query_params.get("proof_name")
-    log.debug(f"{proof_name=}")
+    log.info("Rendering editor page")
 
-    if proof_name is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing required query parameter 'proof_name'",
-        )
-
-    makefile = Path(PROOF_ROOT) / proof_name / "Makefile"
-
-    match = re.search(
-        r"^\s*HARNESS_FILE\s+=\s+(?P<file>.*)$",
-        makefile.read_text(),
-        re.MULTILINE,
-    )
-
-    if match is None:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not retrieve harness name for proof '{proof_name}'",
-        )
-
-    harness: str = match.group("file")
-    log.debug(f"{harness=}")
-
-    harness_file = Path(PROOF_ROOT) / proof_name / (harness + ".c")
-    log.debug(f"{harness_file=}")
-
-    if not harness_file.exists():
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not find harness file for proof '{proof_name}'",
-        )
+    file_path = request.query_params.get("file_path", None)
+    log.debug(f"{file_path=}")
+    # include_hidden = request.query_params.get("include_hidden", False)
+    # log.debug(f"include hidden files: {include_hidden}")
 
     context = {
         "request": request,
-        # "files": await get_proof_files(proof_name),
-        "proof_name": proof_name,
-        "file_name": harness + ".c",
+        "file_path": file_path,
+        # "files": await list_directory_tree(include_hidden=include_hidden),
     }
+
     return templates.TemplateResponse("editor.html", context)

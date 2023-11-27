@@ -55,7 +55,7 @@ async def list_directory_tree(
             and not RE_PATH_CBMC_INTERNALS.search(str(path))
         )
 
-    return sorted(paths, key=lambda p: p.path)
+    return sorted(paths, key=lambda p: (p.type, p.path))
 
 
 @router.get(
