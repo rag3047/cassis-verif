@@ -165,13 +165,12 @@ async def get_cbmc_verification_task_status() -> TaskStatus:
 
 @router.get(
     "/task/results/{version}/{file_path:path}",
-    response_class=FileResponse,
     responses={404: {"model": HTTPError}},
 )
 async def get_cbmc_verification_task_results(
     version: str,
     file_path: str,
-) -> None:
+) -> FileResponse:
     """Return results of CBMC proof execution."""
     log.info("Get CBMC verification task results")
 
@@ -190,7 +189,7 @@ async def get_cbmc_verification_task_results(
     log.debug(f"{path=}")
 
     if not path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Results not found")
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"File not found: {file_path}")
 
     return FileResponse(path)
 

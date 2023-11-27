@@ -55,6 +55,14 @@ async def software_design_document(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("software-design-document.html", context)
 
 
+@pages.route("/doxygen")
+async def doxygen(request: Request) -> HTMLResponse:
+    context = {
+        "request": request,
+    }
+    return templates.TemplateResponse("doxygen.html", context)
+
+
 @pages.route("/editor")
 async def editor(request: Request) -> HTMLResponse:
     proof_name = request.query_params.get("proof_name")
