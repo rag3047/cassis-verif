@@ -1,0 +1,102 @@
+.content {
+    display: flex;
+    height: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.proofs {
+    color: white;
+    background-color: var(--bg-dark);
+    border-right: 2px solid var(--border-color);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 40vw;
+}
+
+.proof-list {
+    margin: 0;
+    padding: 0;
+}
+
+.proof {
+    padding: 1rem 1.5rem 1rem 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    & h2 {
+        margin: 0;
+        margin-bottom: 1rem;
+    }
+
+    & button {
+        margin-left: 0.5rem;
+    }
+
+    & a {
+        text-decoration: none;
+    }
+}
+
+.proof:nth-child(odd) {
+    background-color: var(--bg-light);
+}
+
+.proof:nth-child(even) {
+    background-color: var(--bg-dark);
+}
+
+.toolbar {
+    padding: 0.5rem 1.5rem 0.5rem 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    box-shadow: 0 0 10px black;
+    position: relative;
+    z-index: 1;
+
+    & button {
+        margin-right: 0.5rem;
+    }
+}
+
+.task {
+    color: white;
+    background-color: var(--bg-light);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 60vw;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-status {
+    padding: 0.5rem;
+    height: 70%;
+}
+
+.console {
+    color: white;
+    background-color: var(--bg-dark);
+    border-top: 2px solid var(--border-color);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 60vw;
+    height: 30%;
+    padding: 1rem;
+    font-family: "Courier New", Courier, monospace;
+}
+
+.console:last-child {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}

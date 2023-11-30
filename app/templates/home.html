@@ -6,12 +6,84 @@
         <title>Home | Cassis-Verif</title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='home.css') }}" />
     </head>
     <body>
-        <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
-        <a href="{{ url_for('doxygen') }}">Doxygen</a>
-        <div>
+        <header class="header">
+            <h1>Cassis-Verif</h1>
+            <nav>
+                <a href="{{ url_for('editor') }}">Editor</a>
+                <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
+                <a href="{{ url_for('doxygen') }}">Doxygen</a>
+            </nav>
+        </header>
+
+        <main class="content">
+            <div class="proofs">
+                <div class="toolbar">
+                    <button class="button">Add Proof</button>
+                    <button class="button">Run All Proofs</button>
+                    <button class="button" onclick="updateGitConfig(event)">Edit Git Config</button>
+                </div>
+                <ul class="proof-list">
+                    {% if proofs | length > 0 %} {% for proof in proofs %}
+                    <li class="proof">
+                        <div>
+                            <h2>{{ proof.name }}</h2>
+                            <span>File: {{ proof.src }}</span>
+                        </div>
+                        <div>
+                            <a class="button" href="{{ url_for('editor') }}?proof_name={{ proof.name }}">Edit</a>
+                            <button class="button danger" onclick="confirmDelete(event)" data-name="{{ proof.name }}">
+                                Remove
+                            </button>
+                        </div>
+                    </li>
+                    {% endfor %} {% else %}
+                    <li class="proof"><h2>There are no proofs to show...</h2></li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="task">
+                <div class="task-status"></div>
+                <div class="console">>_</div>
+            </div>
+        </main>
+
+        <dialog id="confirm-delete" class="modal">
+            <p class="modal-text">Are you sure you want to delete the following proof?</p>
+            <p class="modal-text"><b><span id="proof-name"></b></span></p>
+            <form class="modal-form" method="dialog">
+                <div class="modal-buttons">
+                    <button class="button danger">Confirm</button>
+                    <button class="button" autofocus>Cancel</button>
+                </div>
+            </form>
+        </dialog>
+
+        <dialog id="add-proof" class="modal">
+            
+        </dialog>
+
+        <dialog id="edit-git-config" class="modal">
+            <h3 class="modal-text">Git Config</h3>
+            <form class="modal-form modal-form-wide" method="dialog">
+                <label for="#git-remote">Remote:</label>
+                <input id="git-remote" type="text" value="{{ git_config.remote | default('', true) }}" />
+                <label for="#git-branch">Branch:</label>
+                <input id="git-branch" type="text" value="{{ git_config.branch | default('', true) }}" />
+                <label for="#git-user">Username:</label>
+                <input id="git-user" type="text" value="{{ git_config.username | default('', true) }}" />
+                <label for="#git-password">Password:</label>
+                <input id="git-password" type="password" value="{{ git_config.password | default('', true) }}" />
+                <div class="modal-buttons">
+                    <button class="button success">Save</button>
+                    <button class="button">Cancel</button>
+                </div>
+            </form>
+        </dialog>
+        <!-- <div>
             <h1>Existing Proofs</h1>
             <ul id="proof-list">
                 {% if proofs | length > 0 %} {% for proof in proofs %}
@@ -56,7 +128,7 @@
             <label for="#git-password">Password:</label>
             <input id="git-password" type="password" value="{{ git_config.password | default('', true) }}" />
             <button onclick="update_git_config()">Update Git Config</button>
-        </div>
+        </div> -->
         <script>
             async function update_git_config() {
                 const git_pw = document.querySelector("#git-password").value;
@@ -169,6 +241,55 @@
                             </li>`
                     )
                     .join("");
+            }
+
+            //---------------------------------------------------------------------------------------------------------
+            // Delete Modal
+            //---------------------------------------------------------------------------------------------------------
+
+            const confirm_delete_modal = document.querySelector("#confirm-delete");
+            const confirm_delete_button = confirm_delete_modal.querySelector(".modal-buttons button:first-child");
+
+            confirm_delete_button.addEventListener("click", async (event) => {
+                confirm_delete_modal.close("confirm");
+            });
+
+            confirm_delete_modal.addEventListener("close", async (event) => {
+                if (confirm_delete_modal.returnValue == "confirm") {
+                    // TODO: await delete_proof(event);
+                }
+            });
+
+            async function confirmDelete(event) {
+                const nameEl = confirm_delete_modal.querySelector("#proof-name");
+
+                const name = event.target.dataset.name;
+                nameEl.textContent = name;
+
+                confirm_delete_modal.returnValue = "cancel";
+                confirm_delete_modal.showModal();
+            }
+
+            //---------------------------------------------------------------------------------------------------------
+            // Git-Config Modal
+            //---------------------------------------------------------------------------------------------------------
+
+            const update_git_config_modal = document.querySelector("#edit-git-config");
+            const update_git_config_confirm_button = update_git_config_modal.querySelector(".modal-buttons button:first-child");
+
+            update_git_config_confirm_button.addEventListener("click", async (event) => {
+                update_git_config_modal.close("confirm");
+            });
+            
+            update_git_config_modal.addEventListener("close", async (event) => {
+                if (update_git_config_modal.returnValue == "confirm") {
+                    // TODO: await update_git_config(event);
+                }
+            });
+
+            async function updateGitConfig(event) {
+                update_git_config_modal.returnValue = "cancel";
+                update_git_config_modal.showModal();
             }
         </script>
     </body>

@@ -1,7 +1,7 @@
 #dir-tree {
     color: white;
-    background-color: rgba(24, 24, 24, 255);
-    border-right: 2px solid rgba(38, 38, 38, 255);
+    background-color: var(--bg-dark);
+    border-right: 2px solid var(--border-color);
     overflow-y: auto;
     overflow-x: hidden;
     resize: horizontal;
@@ -34,7 +34,11 @@
 
 .toolbar {
     padding: 0.5rem;
-    border-bottom: 2px solid rgba(38, 38, 38, 255);
+    border-bottom: 2px solid var(--border-color);
+
+    & button {
+        margin-right: 0.5rem;
+    }
 }
 
 #editor {
@@ -44,43 +48,29 @@
 #hints {
     flex-grow: 1;
     color: white;
-    background-color: rgba(24, 24, 24, 255);
-    border-left: 2px solid rgba(38, 38, 38, 255);
+    background-color: var(--bg-dark);
+    border-left: 2px solid var(--border-color);
     overflow: auto;
     padding: 0.5rem;
-}
-
-.save {
-    padding: 0.5rem;
-    margin-right: 0.5rem;
-    color: white;
-    background-color: rgba(24, 24, 24, 255);
-    border: 2px solid rgba(38, 38, 38, 255);
-    border-radius: 2px;
-    font-size: 1rem;
-}
-
-.save:hover {
-    border-color: gray;
 }
 
 .notification {
     display: none;
     height: 100%;
     color: white;
-    background-color: rgba(24, 24, 24, 255);
+    background-color: var(--bg-dark);
     padding: 0.5rem;
     border-radius: 4px;
 }
 
 .notification.show-success {
     display: inline;
-    background-color: rgba(97, 152, 70, 255);
+    background-color: var(--success-color);
 }
 
 .notification.show-error {
     display: inline;
-    background-color: rgba(152, 70, 70, 255);
+    background-color: var(--danger-color);
 }
 
 .lds-dual-ring {
