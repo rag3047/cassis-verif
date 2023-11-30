@@ -3,35 +3,42 @@
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title></title>
+        <title>Editor | Cassis-Verif</title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
-        <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
     </head>
     <body>
-        <header>
+        <header class="header">
+            <h1>Cassis-Verif</h1>
             <nav>
                 <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
+                <a href="{{ url_for('doxygen') }}">Doxygen</a>
             </nav>
         </header>
 
-        <aside id="dir-tree"></aside>
-        <main>
-            <!-- TODO: add header to main -->
-            <div id="editor"></div>
-            <div id="hints">
-                <h1>Hints</h1>
-                <ul>
-                    <li>Ctrl + S to save</li>
-                </ul>
+        <main class="content">
+            <!-- TODO: Use SplitJS -->
+            <aside id="dir-tree">
+                <!-- TODO: 2 Tabs (Files & Git) -->
+                <div class="lds-dual-ring"></div>
+            </aside>
+            <div class="editor-container">
+                <div class="toolbar">
+                    <button class="save" onclick="save_file(event)">Save</button>
+                    <span class="notification"></span>
+                </div>
+                <div id="editor"></div>
             </div>
-            <!-- <button onclick="save_file(event)">Save</button> -->
-        </main>
-        <!-- <footer>
-            <p>Output Console here</p>
-        </footer> -->
+            <div id="hints">
+                <!-- <div class="lds-dual-ring"></div> -->
+                <h1>TODO: Hints</h1>
+            </div>
+        </div>
 
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
         <script>
@@ -51,6 +58,7 @@
                     theme: "vs-dark",
                     value: "",
                     language: "plaintext",
+                    automaticLayout: true,
                 });
 
                 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, function (event) {
@@ -84,16 +92,30 @@
             async function save_file(event) {
                 const model = editor.getModel();
 
+                if (model.uri.toString().startsWith("inmemory://")) {
+                    return;
+                }
+
                 const response = await fetch(model.uri, {
-                    method: "POST",
+                    method: "PUT",
                     body: model.getValue(),
                 });
 
+                const notification = document.querySelector(".notification");
+
                 if (response.ok) {
-                    alert("Saved");
+                    notification.textContent = "Saved";
+                    notification.classList.add("show-success");
+                    setTimeout(() => {
+                        notification.classList.remove("show-success");
+                    }, 3000);
                     has_unsaved_changes = false;
                 } else {
-                    alert("Error");
+                    notification.textContent = "Error";
+                    notification.classList.add("show-error");
+                    setTimeout(() => {
+                        notification.classList.remove("show-error");
+                    }, 3000);
                 }
             }
 

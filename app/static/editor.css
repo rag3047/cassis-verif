@@ -1,56 +1,109 @@
-html {
-    height: 100%;
-}
-
-body {
-    height: 100%;
-    display: grid;
-    grid-template-columns: minmax(15rem, 2fr) 7fr 7fr;
-    grid-template-rows: 3rem 1fr;
-    gap: 0.5rem;
-}
-
-header {
-    grid-column: 1 / 4;
-    background-color: yellow;
-}
-
-aside {
-    grid-column: 1 / 2;
-    /* grid-row: 2 / 4; */
-    background-color: blue;
+#dir-tree {
+    color: white;
+    background-color: rgba(24, 24, 24, 255);
+    border-right: 2px solid rgba(38, 38, 38, 255);
     overflow-y: auto;
     overflow-x: hidden;
     resize: horizontal;
+    min-width: 7rem;
+    max-width: 33vw;
+    padding: 0.5rem;
+
+    & li span {
+        display: inline-block;
+        white-space: nowrap;
+    }
 }
 
-main {
-    grid-column: 2 / 4;
-    display: grid;
-    grid-template-columns: subgrid;
-    /* background-color: red; */
-    gap: 0.5rem;
-}
-
-/* footer {
-    grid-column: 2 / 4;
-    background-color: green;
-    overflow: auto;
-    resize: vertical;
-} */
-
-#editor {
-    grid-column: 1 / 2;
+.content {
+    display: flex;
     height: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.editor-container {
+    flex-grow: 1;
+    width: 40vw;
     overflow: auto;
     resize: horizontal;
-    background-color: gray;
+    background-color: rgba(31, 31, 31, 255);
+    display: flex;
+    flex-direction: column;
+}
+
+.toolbar {
+    padding: 0.5rem;
+    border-bottom: 2px solid rgba(38, 38, 38, 255);
+}
+
+#editor {
+    height: 100%;
 }
 
 #hints {
-    grid-column: 2 / 3;
+    flex-grow: 1;
+    color: white;
+    background-color: rgba(24, 24, 24, 255);
+    border-left: 2px solid rgba(38, 38, 38, 255);
+    overflow: auto;
+    padding: 0.5rem;
+}
+
+.save {
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    color: white;
+    background-color: rgba(24, 24, 24, 255);
+    border: 2px solid rgba(38, 38, 38, 255);
+    border-radius: 2px;
+    font-size: 1rem;
+}
+
+.save:hover {
+    border-color: gray;
+}
+
+.notification {
+    display: none;
     height: 100%;
-    background-color: red;
-    /* overflow: auto;
-    resize: horizontal; */
+    color: white;
+    background-color: rgba(24, 24, 24, 255);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.notification.show-success {
+    display: inline;
+    background-color: rgba(97, 152, 70, 255);
+}
+
+.notification.show-error {
+    display: inline;
+    background-color: rgba(152, 70, 70, 255);
+}
+
+.lds-dual-ring {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+}
+.lds-dual-ring:after {
+    content: " ";
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin: 8px;
+    border-radius: 50%;
+    border: 6px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+}
+@keyframes lds-dual-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
