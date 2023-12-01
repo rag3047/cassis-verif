@@ -267,6 +267,8 @@ next_page_button.addEventListener("click", async (event) => {
 // Proof Execution
 //---------------------------------------------------------------------------------------------------------
 
+const task_status_spinner = document.querySelector(".task-status-spinner");
+
 async function run_all_proofs() {
     let response;
 
@@ -287,11 +289,61 @@ async function run_all_proofs() {
         return;
     }
 
-    // TODO: establish websocket connection, update console
+    task_status_spinner.classList.remove("hidden");
+    // TODO: refresh run table
+    await refresh_proof_runs_table();
+    // TODO: establish websocket connection, update console, update task status
+    await start_status_updater();
 }
 
 const run_proofs_button = document.querySelector("#btn-run-proofs");
 run_proofs_button.addEventListener("click", run_all_proofs);
+
+const proof_run_table = document.querySelector(".proof-runs");
+
+async function refresh_proof_runs_table() {
+    let response;
+    try {
+        response = await fetch(`api/v1/cbmc/task/runs`).then((res) => res.json());
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to load proof runs, check console for details.`);
+        return;
+    }
+
+    proof_run_table.innerHTML = response
+        // TODO: fix replacement -> date formatting!
+        .map((run) => proof_run_table_item_template.replace(/{{ proof_run\.(\w+) }}/g, (match, p1) => run[p1] || ""))
+        .join("");
+}
+
+const current_task_status_indicator = document.querySelector("#current-task-status");
+
+async function start_status_updater() {
+    const current_task_status_updater = setInterval(async () => {
+        let response;
+
+        try {
+            response = await fetch(`api/v1/cbmc/task/status`).then((res) => res.json());
+        } catch (err) {
+            console.error(err);
+            current_task_status_indicator.textContent = "Unknown";
+            return;
+        }
+
+        if (response.is_running) {
+            current_task_status_indicator.textContent = "Running";
+            task_status_spinner.classList.remove("hidden");
+        } else {
+            current_task_status_indicator.textContent = "Stopped";
+            task_status_spinner.classList.add("hidden");
+            clearInterval(current_task_status_updater);
+        }
+    }, 5000);
+}
+
+// initially trigger status updater upon page load
+start_status_updater();
 
 //---------------------------------------------------------------------------------------------------------
 // Utils
@@ -318,4 +370,10 @@ const function_list_item_template = `
             Add
         </button>
     </div>
+</li>`;
+
+const proof_run_table_item_template = `
+<li class="table-item">
+    <span>{{ proof_run.start_date }}</span>
+    <a href="api/v1/cbmc/task/results/{{ proof_run.name }}">{{ proof_run.name }}</a>
 </li>`;

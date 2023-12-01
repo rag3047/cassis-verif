@@ -8,6 +8,7 @@ from shutil import rmtree
 from http import HTTPStatus
 from cbmc_starter_kit import setup_proof
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE
+from datetime import datetime
 
 from ..utils.errors import HTTPError
 
@@ -125,9 +126,14 @@ async def delete_cbmc_proof(proof_name: str) -> None:
 # ------------------------------------------------------------
 
 
-class TaskStatus(BaseModel):
+class CBMCTaskStatus(BaseModel):
     is_running: bool
     # TODO: maybe add more fields like stdout, stderr, etc.
+
+
+class CBMCTaskRun(BaseModel):
+    name: str
+    start_date: datetime
 
 
 @router.post(
@@ -155,13 +161,44 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> None:
 
     tasks.add_task(_cleanup_task_when_done)
 
+    # TODO: wait until task folder is created?
+
 
 @router.get("/task/status")
-async def get_cbmc_verification_task_status() -> TaskStatus:
+async def get_cbmc_verification_task_status() -> CBMCTaskStatus:
     """Return status of CBMC proof execution."""
     log.info("Get CBMC verification task status")
-    # TODO: transform this into a websocket endpoint
-    return TaskStatus(is_running=CBMC_PROOFS_TASK is not None)
+    return CBMCTaskStatus(is_running=CBMC_PROOFS_TASK is not None)
+
+
+@router.get("/task/output")
+async def get_cbmc_verification_task_output() -> None:
+    # TODO: implement this using web sockets...
+    ...
+
+
+@router.get("/task/runs")
+async def get_cbmc_verification_task_runs() -> list[CBMCTaskRun]:
+    """Return list of all CBMC verification task runs."""
+    log.info("Get CBMC verification task runs")
+
+    path = Path(f"{PROOF_ROOT}/output/litani/runs")
+
+    if not path.exists():
+        return []
+
+    runs = [
+        CBMCTaskRun(
+            name=run.name,
+            start_date=datetime.fromtimestamp(run.stat().st_ctime),
+        )
+        for run in path.iterdir()
+        if run.is_dir()
+    ]
+
+    log.debug(f"{runs=}")
+
+    return sorted(runs, key=lambda run: run.start_date, reverse=True)
 
 
 @router.get(

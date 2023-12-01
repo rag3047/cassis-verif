@@ -36,9 +36,21 @@
     flex-direction: column;
 }
 
-.task-status {
+.task-overview {
     padding: 0.5rem;
     height: 70%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+
+    & h1 {
+        text-align: center;
+    }
+}
+
+.task-overview {
+    margin-bottom: 1rem;
 }
 
 .console {
@@ -70,4 +82,67 @@
 
 .list-item span {
     font-family: "Courier New", Courier, monospace;
+}
+
+.table {
+    margin: auto;
+    padding: 0;
+    width: 66%;
+}
+
+.table-item {
+    border-bottom: 2px solid var(--border-color);
+    border-left: 2px solid var(--border-color);
+    border-right: 2px solid var(--border-color);
+    display: flex;
+    flex-grow: 1;
+    justify-content: space-around;
+    align-items: center;
+
+    & span,
+    a {
+        margin: 0;
+        padding: 0.5rem;
+        width: 50%;
+        text-align: center;
+    }
+
+    & a {
+        color: white;
+        text-decoration: none;
+    }
+
+    & span:first-child {
+        border-right: 2px solid var(--border-color);
+    }
+}
+
+.table-item:nth-child(odd) {
+    background-color: var(--bg-dark);
+}
+
+.table-item:nth-child(even) {
+    background-color: var(--bg-light);
+}
+
+.table-item:first-child {
+    padding: 0;
+    background-color: var(--bg-dark);
+    border-top: 2px solid var(--border-color);
+
+    & h4 {
+        margin: 0;
+        width: 50%;
+        text-align: center;
+        padding: 0.5rem;
+    }
+
+    & h4:first-child {
+        border-right: 2px solid var(--border-color);
+    }
+}
+
+.center-block {
+    margin: auto;
+    width: min-content;
 }

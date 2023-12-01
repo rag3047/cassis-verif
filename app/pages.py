@@ -1,17 +1,17 @@
 import re
 
 from os import getenv
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
-from pathlib import Path
 from logging import getLogger
 
-from .controllers.git import get_git_config
-from .controllers.cbmc import get_cbmc_proofs
-from .controllers.ctags import get_functions
-from .controllers.files import list_directory_tree
+from .controllers.cbmc import (
+    get_cbmc_proofs,
+    get_cbmc_verification_task_runs,
+    get_cbmc_verification_task_status,
+)
 
 log = getLogger(__name__)
 
@@ -27,17 +27,11 @@ pages = APIRouter()
 async def home(request: Request) -> HTMLResponse:
     log.info("Rendering home page")
 
-    # try:
-    #     git_config = await get_git_config()
-
-    # except HTTPException as e:
-    #     git_config = None
-
     context = {
         "request": request,
         "proofs": await get_cbmc_proofs(),
-        # "git_config": git_config,
-        # "functions": await get_functions(limit=5),
+        "task_status": await get_cbmc_verification_task_status(),
+        "proof_runs": await get_cbmc_verification_task_runs(),
     }
     return templates.TemplateResponse("home.html", context)
 
@@ -76,6 +70,7 @@ async def doxygen(request: Request) -> HTMLResponse:
 async def editor(request: Request) -> HTMLResponse:
     log.info("Rendering editor page")
 
+    # TODO: add support for pre-selected path/file based on proof name
     file_path = request.query_params.get("file_path", None)
     log.debug(f"{file_path=}")
     # include_hidden = request.query_params.get("include_hidden", False)

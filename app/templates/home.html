@@ -46,7 +46,30 @@
                 </ul>
             </div>
             <div class="task">
-                <div class="task-status"></div>
+                <div class="task-overview">
+                    <div class="task-status">
+                        <h1>Current Task: <span id="current-task-status">{{ "Running" if task_status.is_running else "Stopped" }}</span></h1>
+                        <div class="task-status-spinner center-block hidden">
+                            <div class="lds-dual-ring"></div>
+                        </div>
+                    </div>
+                    <div class="task-history">
+                        <h1>Job-History</h1>
+                        <ul class="proof-runs table">
+                            <li class="table-item">
+                                <h4>Start-Time</h4>
+                                <h4>Name</h4>
+                            </li>
+                            {% for proof_run in proof_runs %}
+                            <li class="table-item">
+                                <span>{{ proof_run.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                <!-- TODO: embed in page with navigation -->
+                                <a href="api/v1/cbmc/task/results/{{ proof_run.name }}">{{ proof_run.name }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
                 <div class="console">>_</div>
             </div>
         </main>
