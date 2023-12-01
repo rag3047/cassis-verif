@@ -14,40 +14,6 @@
     width: 40vw;
 }
 
-.proof-list {
-    margin: 0;
-    padding: 0;
-}
-
-.proof {
-    padding: 1rem 1.5rem 1rem 1.5rem;
-    border-bottom: 2px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    & h2 {
-        margin: 0;
-        margin-bottom: 1rem;
-    }
-
-    & button {
-        margin-left: 0.5rem;
-    }
-
-    & a {
-        text-decoration: none;
-    }
-}
-
-.proof:nth-child(odd) {
-    background-color: var(--bg-light);
-}
-
-.proof:nth-child(even) {
-    background-color: var(--bg-dark);
-}
-
 .toolbar {
     padding: 0.5rem 1.5rem 0.5rem 1.5rem;
     border-bottom: 2px solid var(--border-color);
@@ -87,16 +53,21 @@
     font-family: "Courier New", Courier, monospace;
 }
 
-.console:last-child {
-    animation: blink 1s infinite;
+#modal-add-proof {
+    & .list {
+        margin-bottom: 1rem;
+    }
+
+    & .list-item {
+        border-left: 2px solid var(--border-color);
+        border-right: 2px solid var(--border-color);
+    }
+
+    & .list-item:first-child {
+        border-top: 2px solid var(--border-color);
+    }
 }
 
-@keyframes blink {
-    0% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 1;
-    }
+.list-item span {
+    font-family: "Courier New", Courier, monospace;
 }

@@ -22,26 +22,26 @@
         <main class="content">
             <div class="proofs">
                 <div class="toolbar">
-                    <button class="button">Add Proof</button>
-                    <button class="button">Run All Proofs</button>
-                    <button class="button" onclick="updateGitConfig(event)">Edit Git Config</button>
+                    <button id="btn-show-add-proof-modal" class="button">Add Proof</button>
+                    <button id="btn-run-proofs" class="button">Run Proofs</button>
+                    <button id="btn-show-edit-git-config-modal" class="button">Edit Git Config</button>
                 </div>
-                <ul class="proof-list">
+                <ul class="list">
                     {% if proofs | length > 0 %} {% for proof in proofs %}
-                    <li class="proof">
+                    <li class="list-item">
                         <div>
                             <h2>{{ proof.name }}</h2>
-                            <span>File: {{ proof.src }}</span>
+                            <span>{{ proof.src }}</span>
                         </div>
                         <div>
                             <a class="button" href="{{ url_for('editor') }}?proof_name={{ proof.name }}">Edit</a>
-                            <button class="button danger" onclick="confirmDelete(event)" data-name="{{ proof.name }}">
+                            <button class="btn-delete-proof button danger" data-name="{{ proof.name }}">
                                 Remove
                             </button>
                         </div>
                     </li>
                     {% endfor %} {% else %}
-                    <li class="proof"><h2>There are no proofs to show...</h2></li>
+                    <li class="list-item-empty"><h2>There are no proofs to show...</h2></li>
                     {% endif %}
                 </ul>
             </div>
@@ -51,246 +51,54 @@
             </div>
         </main>
 
-        <dialog id="confirm-delete" class="modal">
+        <dialog id="modal-confirm-delete" class="modal">
+            <h2 class="modal-text">Delete Proof</h2>
             <p class="modal-text">Are you sure you want to delete the following proof?</p>
             <p class="modal-text"><b><span id="proof-name"></b></span></p>
             <form class="modal-form" method="dialog">
                 <div class="modal-buttons">
-                    <button class="button danger">Confirm</button>
+                    <button class="button danger" data-name="">Confirm</button>
                     <button class="button" autofocus>Cancel</button>
                 </div>
             </form>
         </dialog>
 
-        <dialog id="add-proof" class="modal">
-            
+        <dialog id="modal-add-proof" class="modal">
+            <h2 class="modal-text">Add Proof</h2>
+            <p class="modal-text alert danger hidden"></p>
+            <form class="modal-form modal-form-33" method="dialog">
+                <input type="search" placeholder="Search..." value="" />
+                <ul class="list">
+                    <li class="list-item-empty"><h2>Please enter a function name...</h2></li>
+                </ul>
+                <div class="pagination hidden" data-offset="0">
+                    <button class="button">Previous</button>
+                    <button class="button">Next</button>
+                </div>
+                <div class="modal-buttons">
+                    <button class="button">Close</button>
+                </div>
+            </form>
         </dialog>
 
-        <dialog id="edit-git-config" class="modal">
-            <h3 class="modal-text">Git Config</h3>
-            <form class="modal-form modal-form-wide" method="dialog">
+        <dialog id="modal-edit-git-config" class="modal">
+            <h2 class="modal-text">Git Config</h2>
+            <p class="modal-text alert danger hidden"></p>
+            <form class="modal-form modal-form-33" method="dialog">
                 <label for="#git-remote">Remote:</label>
-                <input id="git-remote" type="text" value="{{ git_config.remote | default('', true) }}" />
+                <input id="git-remote" type="text" value="" />
                 <label for="#git-branch">Branch:</label>
-                <input id="git-branch" type="text" value="{{ git_config.branch | default('', true) }}" />
+                <input id="git-branch" type="text" value="" />
                 <label for="#git-user">Username:</label>
-                <input id="git-user" type="text" value="{{ git_config.username | default('', true) }}" />
+                <input id="git-user" type="text" value="" />
                 <label for="#git-password">Password:</label>
-                <input id="git-password" type="password" value="{{ git_config.password | default('', true) }}" />
+                <input id="git-password" type="password" value="" />
                 <div class="modal-buttons">
                     <button class="button success">Save</button>
                     <button class="button">Cancel</button>
                 </div>
             </form>
         </dialog>
-        <!-- <div>
-            <h1>Existing Proofs</h1>
-            <ul id="proof-list">
-                {% if proofs | length > 0 %} {% for proof in proofs %}
-                <li>
-                    {{ proof.name }} ({{ proof.src }})
-                    <a data-name="{{ proof.name }}" href="" onclick="delete_proof(event)">remove</a>
-                    <a href="{{ url_for('editor') }}?proof_name={{ proof.name }}">edit</a>
-                </li>
-                {% endfor %} {% else %}
-                <li>No proofs found</li>
-                {% endif %}
-            </ul>
-            <button onclick="run_all_proofs()">Run all Proofs</button>
-            <a href="{{ url_for('results') }}">Results</a>
-            <h1>Add Proof</h1>
-            <input onkeydown="search_files(event)" id="func-name" type="text" value="" />
-            <button onclick="search_files()">Search</button>
-            <ul id="func-list">
-                {% if functions.data | length > 0 %} {% for func in functions.data %}
-                <li>
-                    <h4>{{ func.name }}</h4>
-                    <p>{{ func.file }}</p>
-                    <button data-name="{{ func.name }}" data-file="{{ func.file }}" onclick="add_proof(event)">
-                        Add Proof
-                    </button>
-                </li>
-                {% endfor %}
-                <li>has_more_results: {{ functions.cursor < functions.total }}</li>
-                {% else %}
-                <li>No functions found</li>
-                {% endif %}
-            </ul>
-        </div>
-        <div class="git-config">
-            <h1>Git-Config</h1>
-            <label for="#git-remote">Remote:</label>
-            <input id="git-remote" type="text" value="{{ git_config.remote | default('', true) }}" />
-            <label for="#git-branch">Branch:</label>
-            <input id="git-branch" type="text" value="{{ git_config.branch | default('', true) }}" />
-            <label for="#git-user">Username:</label>
-            <input id="git-user" type="text" value="{{ git_config.username | default('', true) }}" />
-            <label for="#git-password">Password:</label>
-            <input id="git-password" type="password" value="{{ git_config.password | default('', true) }}" />
-            <button onclick="update_git_config()">Update Git Config</button>
-        </div> -->
-        <script>
-            async function update_git_config() {
-                const git_pw = document.querySelector("#git-password").value;
-                const is_pw_set = git_pw != "" && git_pw.match(/\*+/) == null;
-
-                const config = await fetch("api/v1/git/config", {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        remote: document.querySelector("#git-remote").value,
-                        branch: document.querySelector("#git-branch").value,
-                        username: document.querySelector("#git-user").value || null,
-                        password: is_pw_set ? git_pw : null,
-                    }),
-                }).then((res) => res.json());
-
-                document.querySelector("#git-password").value = config.password;
-                document.querySelector("#git-user").value = config.username;
-                document.querySelector("#git-branch").value = config.branch;
-                document.querySelector("#git-remote").value = config.remote;
-            }
-
-            async function search_files(event) {
-                if (event && event.code != "Enter") return;
-
-                const filter = document.querySelector("#func-name").value;
-
-                const functions = await fetch(`api/v1/ctags/functions?filter=${filter}&limit=5`).then((res) =>
-                    res.json()
-                );
-
-                if (functions.data.length == 0) {
-                    document.querySelector("#func-list").innerHTML = "<li>No functions found</li>";
-                    return;
-                }
-
-                document.querySelector("#func-list").innerHTML = functions.data
-                    .map(
-                        (func) =>
-                            `<li>
-                                <h4>${func.name}</h4>
-                                <p>${func.file}</p>
-                                <button data-name="${func.name}" data-file="${func.file}" onclick="add_proof(event)">
-                                    Add Proof
-                                </button>
-                            </li>`
-                    )
-                    .concat([`<li>has_more_results: ${functions.cursor < functions.total}</li>`])
-                    .join("");
-            }
-
-            async function add_proof(event) {
-                const func_name = event.target.dataset.name;
-                const func_file = event.target.dataset.file;
-
-                const proof = await fetch(`api/v1/cbmc/proofs`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        name: func_name,
-                        src: func_file,
-                    }),
-                })
-                    .catch((err) => {
-                        console.log(err);
-                        alert(`Failed to add proof: ${err}`);
-                    })
-                    .then((res) => res.json());
-
-                await refresh_proof_list();
-            }
-
-            async function delete_proof(event) {
-                event.preventDefault();
-
-                await fetch(`api/v1/cbmc/proofs/${event.target.dataset.name}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-
-                await refresh_proof_list();
-            }
-
-            async function run_all_proofs() {
-                await fetch(`api/v1/cbmc/task`, {
-                    method: "POST",
-                });
-            }
-
-            async function refresh_proof_list() {
-                const proofs = await fetch(`api/v1/cbmc/proofs`).then((res) => res.json());
-
-                if (proofs.length == 0) {
-                    document.querySelector("#proof-list").innerHTML = "<li>No proofs found</li>";
-                    return;
-                }
-
-                document.querySelector("#proof-list").innerHTML = proofs
-                    .map(
-                        (proof) =>
-                            `<li>${proof.name} (${proof.src})
-                                <a data-name="${proof.name}" href="" onclick="delete_proof(event)">remove</a>
-                                <a href="{{ url_for('editor') }}?proof_name=${proof.name}">edit</a>
-                            </li>`
-                    )
-                    .join("");
-            }
-
-            //---------------------------------------------------------------------------------------------------------
-            // Delete Modal
-            //---------------------------------------------------------------------------------------------------------
-
-            const confirm_delete_modal = document.querySelector("#confirm-delete");
-            const confirm_delete_button = confirm_delete_modal.querySelector(".modal-buttons button:first-child");
-
-            confirm_delete_button.addEventListener("click", async (event) => {
-                confirm_delete_modal.close("confirm");
-            });
-
-            confirm_delete_modal.addEventListener("close", async (event) => {
-                if (confirm_delete_modal.returnValue == "confirm") {
-                    // TODO: await delete_proof(event);
-                }
-            });
-
-            async function confirmDelete(event) {
-                const nameEl = confirm_delete_modal.querySelector("#proof-name");
-
-                const name = event.target.dataset.name;
-                nameEl.textContent = name;
-
-                confirm_delete_modal.returnValue = "cancel";
-                confirm_delete_modal.showModal();
-            }
-
-            //---------------------------------------------------------------------------------------------------------
-            // Git-Config Modal
-            //---------------------------------------------------------------------------------------------------------
-
-            const update_git_config_modal = document.querySelector("#edit-git-config");
-            const update_git_config_confirm_button = update_git_config_modal.querySelector(".modal-buttons button:first-child");
-
-            update_git_config_confirm_button.addEventListener("click", async (event) => {
-                update_git_config_modal.close("confirm");
-            });
-            
-            update_git_config_modal.addEventListener("close", async (event) => {
-                if (update_git_config_modal.returnValue == "confirm") {
-                    // TODO: await update_git_config(event);
-                }
-            });
-
-            async function updateGitConfig(event) {
-                update_git_config_modal.returnValue = "cancel";
-                update_git_config_modal.showModal();
-            }
-        </script>
+        <script src="{{ url_for('static', path='home.js') }}" async defer></script>
     </body>
 </html>

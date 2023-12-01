@@ -27,17 +27,17 @@ pages = APIRouter()
 async def home(request: Request) -> HTMLResponse:
     log.info("Rendering home page")
 
-    try:
-        git_config = await get_git_config()
+    # try:
+    #     git_config = await get_git_config()
 
-    except HTTPException as e:
-        git_config = None
+    # except HTTPException as e:
+    #     git_config = None
 
     context = {
         "request": request,
         "proofs": await get_cbmc_proofs(),
-        "git_config": git_config,
-        "functions": await get_functions(limit=5),
+        # "git_config": git_config,
+        # "functions": await get_functions(limit=5),
     }
     return templates.TemplateResponse("home.html", context)
 
