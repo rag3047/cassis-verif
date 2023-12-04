@@ -29,40 +29,40 @@
 .task {
     color: white;
     background-color: var(--bg-light);
-    overflow-y: auto;
-    overflow-x: hidden;
     width: 60vw;
     display: flex;
     flex-direction: column;
 }
 
 .task-overview {
-    padding: 0.5rem;
+    padding: 1rem;
     height: 70%;
     overflow: auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
+    /* box-shadow: inset 0 -8px 6px -6px black; */
+
+    /* TODO: only set this when not full height*/
+    /* justify-content: space-evenly; */
 
     & h1 {
         text-align: center;
     }
 }
 
-.task-overview {
-    margin-bottom: 1rem;
-}
-
 .console {
     color: white;
-    background-color: var(--bg-dark);
-    border-top: 2px solid var(--border-color);
-    overflow-y: auto;
-    overflow-x: hidden;
-    width: 60vw;
     height: 30%;
     padding: 1rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    resize: none;
+    background-color: var(--bg-dark);
+    border: none;
+    border-top: 2px solid var(--border-color);
     font-family: "Courier New", Courier, monospace;
+    /* TODO: fix shadow (only top) */
+    box-shadow: inset 0px 0px 10px 0px black;
 }
 
 #modal-add-proof {
@@ -87,7 +87,7 @@
 .table {
     margin: auto;
     padding: 0;
-    width: 66%;
+    width: 80%;
 }
 
 .table-item {
@@ -95,16 +95,18 @@
     border-left: 2px solid var(--border-color);
     border-right: 2px solid var(--border-color);
     display: flex;
-    flex-grow: 1;
     justify-content: space-around;
-    align-items: center;
+    align-items: stretch;
+    text-align: center;
 
-    & span,
-    a {
+    & > * {
         margin: 0;
         padding: 0.5rem;
-        width: 50%;
-        text-align: center;
+        border-right: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 0.5rem;
     }
 
     & a {
@@ -112,9 +114,21 @@
         text-decoration: none;
     }
 
-    & span:first-child {
-        border-right: 2px solid var(--border-color);
+    & a:hover {
+        text-decoration: underline;
     }
+
+    & > *:last-child {
+        border-right: none;
+    }
+}
+
+.width-25 {
+    width: 25%;
+}
+
+.width-50 {
+    width: 50%;
 }
 
 .table-item:nth-child(odd) {
@@ -132,13 +146,13 @@
 
     & h4 {
         margin: 0;
-        width: 50%;
         text-align: center;
         padding: 0.5rem;
+        border-right: 2px solid var(--border-color);
     }
 
-    & h4:first-child {
-        border-right: 2px solid var(--border-color);
+    & h4:last-child {
+        border-right: none;
     }
 }
 

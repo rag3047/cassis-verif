@@ -222,10 +222,23 @@ async function search_function() {
     }
 
     function_list.innerHTML = functions.data
-        .map((func) => function_list_item_template.replace(/{{ func\.(\w+) }}/g, (match, p1) => func[p1] || ""))
+        .map(
+            (func) => `
+                <li class="list-item">
+                    <div>
+                        <h2>${func.name}</h2>
+                        <span>${func.file}</span>
+                    </div>
+                    <div>
+                        <button class="btn-add-proof button success" data-name="${func.name}" data-file="${func.file}">
+                            Add
+                        </button>
+                    </div>
+                </li>`
+        )
         .join("");
 
-    // TODO: add event listeners to buttons
+    // add event listeners to buttons
     const add_buttons = function_list.querySelectorAll(".btn-add-proof");
     for (const btn of add_buttons) {
         btn.addEventListener("click", add_proof);
@@ -267,39 +280,46 @@ next_page_button.addEventListener("click", async (event) => {
 // Proof Execution
 //---------------------------------------------------------------------------------------------------------
 
+const output_console = document.querySelector(".console");
+const run_proofs_button = document.querySelector("#btn-run-proofs");
+const cancel_proofs_button = document.querySelector("#btn-cancel-proofs"); // TODO
+const proof_run_table = document.querySelector(".proof-runs");
 const task_status_spinner = document.querySelector(".task-status-spinner");
 
 async function run_all_proofs() {
+    run_proofs_button.setAttribute("disabled", "");
+
     let response;
 
     try {
         response = await fetch(`api/v1/cbmc/task`, {
             method: "POST",
-        });
+        }).then((res) => res.json());
     } catch (err) {
         console.error(err);
         alert(`Failed to run proofs, check console for details.`);
+        run_proofs_button.removeAttribute("disabled");
         return;
     }
 
-    if (!response.ok) {
-        const error = await response.json();
+    if (response.error_code) {
         // TODO: Make pretty
-        alert(`Failed to run proofs: ${error.detail}`);
+        alert(`Failed to run proofs: ${response.detail}`);
+        run_proofs_button.removeAttribute("disabled");
         return;
     }
 
+    cancel_proofs_button.removeAttribute("disabled");
     task_status_spinner.classList.remove("hidden");
-    // TODO: refresh run table
+    output_console.textContent = "";
+
+    // refresh proof run table
     await refresh_proof_runs_table();
-    // TODO: establish websocket connection, update console, update task status
+
     await start_status_updater();
 }
 
-const run_proofs_button = document.querySelector("#btn-run-proofs");
 run_proofs_button.addEventListener("click", run_all_proofs);
-
-const proof_run_table = document.querySelector(".proof-runs");
 
 async function refresh_proof_runs_table() {
     let response;
@@ -311,14 +331,98 @@ async function refresh_proof_runs_table() {
         return;
     }
 
-    proof_run_table.innerHTML = response
-        // TODO: fix replacement -> date formatting!
-        .map((run) => proof_run_table_item_template.replace(/{{ proof_run\.(\w+) }}/g, (match, p1) => run[p1] || ""))
-        .join("");
+    proof_run_table.innerHTML =
+        `<li class="table-item">
+            <h4 class="width-25">Start-Time</h4>
+            <h4 class="width-50">Name</h4>
+            <h4 class="width-25">Actions</h4>
+        </li>` +
+        response
+            .map(
+                // TODO: Fix this -> buttons layout etc.
+                (proof_run) =>
+                    `<li class="table-item">
+                        <span class="width-25">${moment(proof_run.start_date).format("YYYY-MM-DD HH:mm:ss")}</span>
+                        <a class="width-50" href="results?version=${proof_run.name}">${proof_run.name}</a>
+                        <span class="width-25">
+                            <button class="button download" data-version="${proof_run.name}">Download</button>
+                            <button class="button danger delete" data-version="${proof_run.name}">Delete</button>
+                        </span>
+                    </li>`
+            )
+            .join("");
+
+    const delete_links = proof_run_table.querySelectorAll(".list-item .delete");
+    for (const link of delete_links) {
+        // TODO: add confirmation modal
+        link.addEventListener("click", delete_proof_run);
+    }
+}
+
+async function cancel_proof_run() {
+    let response;
+    try {
+        response = await fetch(`api/v1/cbmc/task`, {
+            method: "DELETE",
+        });
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to cancel proof run, check console for details.`);
+        return;
+    }
+
+    if (!response.ok) {
+        // TODO: make pretty
+        const error = await response.json();
+        alert(`Failed to cancel proof run: ${error.detail}`);
+        return;
+    }
+
+    cancel_proofs_button.setAttribute("disabled", "");
+    run_proofs_button.removeAttribute("disabled");
+    task_status_spinner.classList.add("hidden");
+
+    // TODO: fix
+    // // refresh proof run table (cancelled run will be removed)
+    // await refresh_proof_runs_table();
+}
+
+cancel_proofs_button.addEventListener("click", cancel_proof_run);
+
+async function delete_proof_run(event) {
+    event.preventDefault();
+
+    const version = event.target.dataset.version;
+
+    let response;
+    try {
+        response = await fetch(`api/v1/cbmc/task/results/${version}`, {
+            method: "DELETE",
+        });
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to delete proof run, check console for details.`);
+        return;
+    }
+
+    if (!response.ok) {
+        // TODO: make pretty
+        const error = await response.json();
+        alert(`Failed to delete proof run: ${error.detail}`);
+        return;
+    }
+
+    await refresh_proof_runs_table();
+}
+
+const delete_links = proof_run_table.querySelectorAll(".list-item .delete");
+for (const link of delete_links) {
+    link.addEventListener("click", delete_proof_run);
 }
 
 const current_task_status_indicator = document.querySelector("#current-task-status");
 
+// TODO: replace this with websocket connection...
 async function start_status_updater() {
     const current_task_status_updater = setInterval(async () => {
         let response;
@@ -328,15 +432,21 @@ async function start_status_updater() {
         } catch (err) {
             console.error(err);
             current_task_status_indicator.textContent = "Unknown";
+            cancel_proofs_button.setAttribute("disabled", "");
+            run_proofs_button.setAttribute("disabled", "");
             return;
         }
 
         if (response.is_running) {
             current_task_status_indicator.textContent = "Running";
             task_status_spinner.classList.remove("hidden");
+            cancel_proofs_button.removeAttribute("disabled");
+            run_proofs_button.setAttribute("disabled", "");
         } else {
-            current_task_status_indicator.textContent = "Stopped";
+            current_task_status_indicator.textContent = "None";
             task_status_spinner.classList.add("hidden");
+            cancel_proofs_button.setAttribute("disabled", "");
+            run_proofs_button.removeAttribute("disabled");
             clearInterval(current_task_status_updater);
         }
     }, 5000);
@@ -344,6 +454,16 @@ async function start_status_updater() {
 
 // initially trigger status updater upon page load
 start_status_updater();
+
+//---------------------------------------------------------------------------------------------------------
+// Console
+//---------------------------------------------------------------------------------------------------------
+
+const ws = new WebSocket(`ws://${window.location.host}/api/v1/cbmc/task/output`);
+ws.onmessage = (event) => {
+    output_console.textContent += event.data;
+    output_console.scrollTop = output_console.scrollHeight;
+};
 
 //---------------------------------------------------------------------------------------------------------
 // Utils
@@ -358,22 +478,3 @@ function debounce(func, timeout = 300) {
         }, timeout);
     };
 }
-
-const function_list_item_template = `
-<li class="list-item">
-    <div>
-        <h2>{{ func.name }}</h2>
-        <span>{{ func.file }}</span>
-    </div>
-    <div>
-        <button class="btn-add-proof button success" data-name="{{ func.name }}" data-file="{{ func.file }}">
-            Add
-        </button>
-    </div>
-</li>`;
-
-const proof_run_table_item_template = `
-<li class="table-item">
-    <span>{{ proof_run.start_date }}</span>
-    <a href="api/v1/cbmc/task/results/{{ proof_run.name }}">{{ proof_run.name }}</a>
-</li>`;

@@ -33,6 +33,7 @@ async def home(request: Request) -> HTMLResponse:
         "task_status": await get_cbmc_verification_task_status(),
         "proof_runs": await get_cbmc_verification_task_runs(),
     }
+
     return templates.TemplateResponse("home.html", context)
 
 
@@ -40,9 +41,14 @@ async def home(request: Request) -> HTMLResponse:
 async def results(request: Request) -> HTMLResponse:
     log.info("Rendering results page")
 
+    version = request.query_params.get("version", "latest")
+    log.debug(f"{version=}")
+
     context = {
         "request": request,
+        "version": version,
     }
+
     return templates.TemplateResponse("results.html", context)
 
 
@@ -63,6 +69,7 @@ async def doxygen(request: Request) -> HTMLResponse:
     context = {
         "request": request,
     }
+
     return templates.TemplateResponse("doxygen.html", context)
 
 

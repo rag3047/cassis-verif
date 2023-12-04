@@ -1,12 +1,13 @@
 from os import getenv, linesep
 from logging import getLogger
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 from shutil import rmtree
 from http import HTTPStatus
 from cbmc_starter_kit import setup_proof
+from asyncio import sleep, wait_for, TimeoutError
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE
 from datetime import datetime
 
@@ -18,6 +19,8 @@ DATA_DIR = getenv("DATA_DIR")
 PROOF_ROOT = getenv("PROOF_ROOT")
 
 CBMC_PROOFS_TASK: Process | None = None
+CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
+CBMC_PROOFS_TASK_OUTPUT_RESET = False
 
 router = APIRouter(prefix="/cbmc", tags=["cbmc"])
 
@@ -121,6 +124,9 @@ async def delete_cbmc_proof(proof_name: str) -> None:
         pass
 
 
+# TODO: get harness files (get proof dirs and then harness files from makefile)
+
+
 # ------------------------------------------------------------
 # CBMC Task Execution
 # ------------------------------------------------------------
@@ -138,10 +144,9 @@ class CBMCTaskRun(BaseModel):
 
 @router.post(
     "/task",
-    status_code=HTTPStatus.ACCEPTED,
     responses={409: {"model": HTTPError}},
 )
-async def start_cbmc_verification_task(tasks: BackgroundTasks) -> None:
+async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCTaskRun:
     """Execute all CBMC proofs."""
     global CBMC_PROOFS_TASK
     log.info("Start CBMC verification task")
@@ -149,19 +154,31 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> None:
     if CBMC_PROOFS_TASK is not None:
         raise HTTPException(HTTPStatus.CONFLICT, "Verification Task already running")
 
+    num_proof_runs = len(await get_cbmc_verification_task_runs())
+
     # call run-cbmc-proofs.py in subprocess
     CBMC_PROOFS_TASK = await create_subprocess_exec(
         "python3",
         "run-cbmc-proofs.py",
         cwd=PROOF_ROOT,
-        # TODO: maybe capture stdout and stderr in a file and return it in /task/results?
         stdout=PIPE,
         stderr=PIPE,
     )
 
-    tasks.add_task(_cleanup_task_when_done)
+    tasks.add_task(_buffer_task_output)
 
-    # TODO: wait until task folder is created?
+    proof_runs = await get_cbmc_verification_task_runs()
+
+    # wait until litani is initialized
+    while len(proof_runs) <= num_proof_runs:
+        await sleep(0.5)
+        proof_runs = await get_cbmc_verification_task_runs()
+
+    if len(proof_runs) > 10:  # TODO: get from env
+        # remove oldest run
+        rmtree(Path(PROOF_ROOT) / "output/litani/runs" / proof_runs[-1].name)
+
+    return proof_runs[0]
 
 
 @router.get("/task/status")
@@ -171,10 +188,34 @@ async def get_cbmc_verification_task_status() -> CBMCTaskStatus:
     return CBMCTaskStatus(is_running=CBMC_PROOFS_TASK is not None)
 
 
-@router.get("/task/output")
-async def get_cbmc_verification_task_output() -> None:
-    # TODO: implement this using web sockets...
-    ...
+@router.websocket("/task/output")
+async def get_cbmc_verification_task_output(websocket: WebSocket) -> None:
+    """Return output of CBMC proof execution."""
+    global CBMC_PROOFS_TASK_OUTPUT_RESET
+    log.info("Get CBMC verification task output")
+
+    await websocket.accept()
+
+    if (
+        not CBMC_PROOFS_TASK_OUTPUT.exists()
+        or CBMC_PROOFS_TASK_OUTPUT.stat().st_size == 0
+    ):
+        await websocket.send_text("No output available")
+        CBMC_PROOFS_TASK_OUTPUT.touch(exist_ok=True)
+
+    with open(CBMC_PROOFS_TASK_OUTPUT, "r") as file:
+        while True:
+            if CBMC_PROOFS_TASK_OUTPUT_RESET:
+                file.seek(0)
+                CBMC_PROOFS_TASK_OUTPUT_RESET = False
+
+            line = file.readline()
+
+            if not line:
+                await sleep(1)
+
+            else:
+                await websocket.send_text(line)
 
 
 @router.get("/task/runs")
@@ -206,8 +247,8 @@ async def get_cbmc_verification_task_runs() -> list[CBMCTaskRun]:
     responses={404: {"model": HTTPError}},
 )
 async def get_cbmc_verification_task_results(
-    version: str,
-    file_path: str,
+    version: str | None = None,
+    file_path: str | None = None,
 ) -> FileResponse:
     """Return results of CBMC proof execution."""
     log.info("Get CBMC verification task results")
@@ -233,6 +274,35 @@ async def get_cbmc_verification_task_results(
 
 
 @router.delete(
+    "/task/results/{version}",
+    status_code=HTTPStatus.NO_CONTENT,
+    responses={409: {"model": HTTPError}},
+)
+async def delete_cbmc_verification_task_results(version: str) -> None:
+    """Delete results of CBMC proof execution."""
+    log.info("Delete CBMC verification task results")
+
+    version = version.lower()
+    log.debug(f"{version=}")
+
+    if CBMC_PROOFS_TASK is not None:
+        raise HTTPException(
+            HTTPStatus.CONFLICT,
+            "Cannot delete results while verification task is running.",
+        )
+
+    path = Path(f"{PROOF_ROOT}/output/litani/runs/{version}")
+
+    if not path.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"Version not found: {version}")
+
+    rmtree(path)
+
+
+# TODO: download result as zip file
+
+
+@router.delete(
     "/task",
     status_code=HTTPStatus.NO_CONTENT,
     responses={409: {"model": HTTPError}},
@@ -245,19 +315,47 @@ async def cancel_cbmc_verification_task() -> None:
     if CBMC_PROOFS_TASK is None:
         raise HTTPException(HTTPStatus.CONFLICT, "Verification Task not running")
 
-    CBMC_PROOFS_TASK.terminate()
+    CBMC_PROOFS_TASK.kill()
+
+    # # remove cancelled proof run
+    # TODO fix: maybe use background task instead?
+    # proof_runs = await get_cbmc_verification_task_runs()
+    # rmtree(Path(PROOF_ROOT) / "output/litani/runs" / proof_runs[0].name)
 
 
 # ------------------------------------------------------------
 # Utils
 # ------------------------------------------------------------
 
+# TODO: autoremove old runs (configurable limit, default keep up to 10)
 
-async def _cleanup_task_when_done() -> None:
-    """Cleanup after verification task is completed."""
-    global CBMC_PROOFS_TASK
 
-    stdout, stderr = await CBMC_PROOFS_TASK.communicate()
+async def _buffer_task_output() -> None:
+    """Buffer Task STDOUT into a file."""
+    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT_RESET
+    log.debug("Buffering CBMC verification task output")
+
+    with open(CBMC_PROOFS_TASK_OUTPUT, "w") as file:
+        CBMC_PROOFS_TASK_OUTPUT_RESET = True
+
+        while CBMC_PROOFS_TASK.returncode is None:
+            # TODO: use asyncio.as_completed() to read both stdout and stderr
+            # TODO fix: this "blocks" until the task is completed...
+            try:
+                line = await wait_for(CBMC_PROOFS_TASK.stdout.readline(), timeout=1)
+
+                if not line:
+                    break
+
+                file.write(line.decode("ascii"))
+                file.flush()
+
+            except TimeoutError:
+                pass  # check loop condition for cancellation
+
+        # get remaining output (if any)
+        stdout, stderr = await CBMC_PROOFS_TASK.communicate()
+        file.write(stdout.decode("ascii"))
 
     if CBMC_PROOFS_TASK.returncode > 0:
         log.error(
@@ -269,5 +367,25 @@ async def _cleanup_task_when_done() -> None:
             f"CBMC verification task cancelled by user (signal={-CBMC_PROOFS_TASK.returncode})"
         )
 
-    log.info(f"CBMC verification task completed: {stdout.decode('ascii')}")
+    log.info(f"CBMC verification task completed")
     CBMC_PROOFS_TASK = None
+
+
+# async def _cleanup_task_when_done() -> None:
+#     """Cleanup after verification task is completed."""
+#     global CBMC_PROOFS_TASK
+
+#     stdout, stderr = await CBMC_PROOFS_TASK.communicate()
+
+#     if CBMC_PROOFS_TASK.returncode > 0:
+#         log.error(
+#             f"CBMC verification task failed with returncode {CBMC_PROOFS_TASK.returncode}: {stderr.decode('ascii')}"
+#         )
+
+#     elif CBMC_PROOFS_TASK.returncode < 0:
+#         log.warn(
+#             f"CBMC verification task cancelled by user (signal={-CBMC_PROOFS_TASK.returncode})"
+#         )
+
+#     log.info(f"CBMC verification task completed: {stdout.decode('ascii')}")
+#     CBMC_PROOFS_TASK = None

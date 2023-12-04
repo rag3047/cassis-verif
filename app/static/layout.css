@@ -61,6 +61,20 @@ body {
 
 .button:hover {
     border-color: gray;
+    cursor: pointer;
+}
+
+.button[disabled] {
+    color: gray;
+    cursor: initial;
+}
+
+.button[disabled]:hover {
+    border-color: var(--border-color);
+}
+
+.button[disabled]:focus {
+    border-color: var(--border-color);
 }
 
 .danger {
