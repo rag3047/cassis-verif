@@ -31,12 +31,21 @@
                 <div class="toolbar">
                     <button class="button" onclick="save_file(event)">Save</button>
                     <span class="notification"></span>
+                    <button class="button" onclick="hide_editor()">Hide Editor</button>
                 </div>
                 <div id="editor"></div>
             </div>
-            <div id="hints">
-                <!-- <div class="lds-dual-ring"></div> -->
-                <h1>TODO: Hints</h1>
+            <div class="hints-container">
+                <div class="toolbar">
+                    <button id="btn-show-editor" class="button hidden" onclick="show_editor()">Show Editor</button>
+                    <select id="sel-proof" class="dropdown">
+                        <option value="Test" selected>Test</option>
+                    </select>
+                </div>
+                <div class="hints">
+                    <h1>TODO: Hints</h1>
+                    <!-- <div class="lds-dual-ring"></div> -->
+                </div>
             </div>
         </div>
 

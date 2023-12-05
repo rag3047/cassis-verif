@@ -2,7 +2,6 @@
 // Globals
 //---------------------------------------------------------------------------------------------------------
 
-let editor;
 let has_unsaved_changes = false;
 
 window.addEventListener("beforeunload", (event) => {
@@ -15,6 +14,8 @@ window.addEventListener("beforeunload", (event) => {
 //---------------------------------------------------------------------------------------------------------
 // Monaco Editor
 //---------------------------------------------------------------------------------------------------------
+
+let editor;
 
 require.config({ paths: { vs: "static/monaco-editor/min/vs" } });
 require(["vs/editor/editor.main"], async function () {
@@ -80,6 +81,19 @@ async function save_file() {
             notification.classList.remove("show-error");
         }, 3000);
     }
+}
+
+const show_editor_button = document.querySelector("#btn-show-editor");
+const editor_container = document.querySelector(".editor-container");
+
+async function hide_editor() {
+    show_editor_button.classList.remove("hidden");
+    editor_container.classList.add("hidden");
+}
+
+async function show_editor() {
+    show_editor_button.classList.add("hidden");
+    editor_container.classList.remove("hidden");
 }
 
 //---------------------------------------------------------------------------------------------------------

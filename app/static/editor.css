@@ -27,7 +27,8 @@
     width: 40vw;
     overflow: auto;
     resize: horizontal;
-    background-color: rgba(31, 31, 31, 255);
+    background-color: var(--bg-light);
+    border-right: 2px solid var(--border-color);
     display: flex;
     flex-direction: column;
 }
@@ -45,13 +46,34 @@
     height: 100%;
 }
 
-#hints {
+.hints-container {
     flex-grow: 1;
     color: white;
     background-color: var(--bg-dark);
-    border-left: 2px solid var(--border-color);
     overflow: auto;
+}
+
+.hints {
     padding: 0.5rem;
+}
+
+.dropdown {
+    padding: 0.5rem;
+    color: white;
+    background-color: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-radius: 2px;
+    font-size: 1rem;
+    outline: none;
+}
+
+.dropdown:focus {
+    border-color: gray;
+}
+
+.dropdown:hover {
+    border-color: gray;
+    cursor: pointer;
 }
 
 /* TODO: replace with .alert classes from layout.css */
