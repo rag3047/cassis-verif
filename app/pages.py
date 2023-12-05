@@ -9,7 +9,7 @@ from logging import getLogger
 
 from .controllers.cbmc import (
     get_cbmc_proofs,
-    get_cbmc_verification_task_runs,
+    get_cbmc_verification_task_result_list,
     get_cbmc_verification_task_status,
 )
 
@@ -18,8 +18,6 @@ log = getLogger(__name__)
 PROOF_ROOT = getenv("PROOF_ROOT")
 
 templates = Jinja2Templates(directory="app/templates", undefined=ChainableUndefined)
-# templates.env.filters["json_encode"] = json.dumps
-# templates.env.globals["project_name"] = "CBMC Starter Kit"
 pages = APIRouter()
 
 
@@ -31,7 +29,7 @@ async def home(request: Request) -> HTMLResponse:
         "request": request,
         "proofs": await get_cbmc_proofs(),
         "task_status": await get_cbmc_verification_task_status(),
-        "proof_runs": await get_cbmc_verification_task_runs(),
+        "results": await get_cbmc_verification_task_result_list(),
     }
 
     return templates.TemplateResponse("home.html", context)

@@ -11,7 +11,7 @@
     <body>
         <a href="{{ url_for('home') }}">Home</a>
         <iframe
-            src="{{ url_for('get_cbmc_verification_task_results', version=version, file_path='index.html') }}"
+            src="{{ url_for('get_cbmc_verification_task_result', version=version, file_path='index.html') }}"
             width="100%"
             style="height: 95vh"
         ></iframe>

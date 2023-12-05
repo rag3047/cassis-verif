@@ -20,10 +20,8 @@
     box-shadow: 0 0 10px black;
     position: relative;
     z-index: 1;
-
-    & button {
-        margin-right: 0.5rem;
-    }
+    display: flex;
+    justify-content: space-between;
 }
 
 .task {
@@ -109,26 +107,18 @@
         gap: 0.5rem;
     }
 
-    & a {
+    & > a {
         color: white;
         text-decoration: none;
     }
 
-    & a:hover {
+    & > a:hover {
         text-decoration: underline;
     }
 
     & > *:last-child {
         border-right: none;
     }
-}
-
-.width-25 {
-    width: 25%;
-}
-
-.width-50 {
-    width: 50%;
 }
 
 .table-item:nth-child(odd) {
@@ -154,6 +144,24 @@
     & h4:last-child {
         border-right: none;
     }
+}
+
+.table-item-empty {
+    padding: 1rem 1.5rem 1rem 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-top: none;
+}
+
+.width-25 {
+    width: 25%;
+}
+
+.width-50 {
+    width: 50%;
 }
 
 .center-block {
