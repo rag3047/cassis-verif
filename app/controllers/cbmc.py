@@ -1,3 +1,5 @@
+import re
+
 from typing import Literal
 from os import getenv, remove, linesep
 from logging import getLogger
@@ -26,6 +28,8 @@ PROOF_ROOT = getenv("PROOF_ROOT")
 CBMC_PROOFS_TASK: Process | None = None
 CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
 
+RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
+
 router = APIRouter(prefix="/cbmc", tags=["cbmc"])
 
 
@@ -34,9 +38,13 @@ router = APIRouter(prefix="/cbmc", tags=["cbmc"])
 # ------------------------------------------------------------
 
 
-class CBMCProof(BaseModel):
+class CBMCProofCreate(BaseModel):
     name: str
-    src: Path
+    src: Path | None
+
+
+class CBMCProof(CBMCProofCreate):
+    harness: str
 
 
 @router.get("/proofs")
@@ -44,33 +52,48 @@ async def get_cbmc_proofs() -> list[CBMCProof]:
     """Return list of CBMC proofs."""
     log.info("Listing all CBMC proofs")
 
-    proofs = [
+    proofs_dirs = [
         dir
         for dir in Path(PROOF_ROOT).iterdir()
         if dir.is_dir() and (dir / "cbmc-proof.txt").exists()
     ]
 
-    log.debug(f"Found {len(proofs)} proofs")
-    log.debug(proofs)
+    log.debug(f"Found {len(proofs_dirs)} proofs")
+    log.debug(proofs_dirs)
 
-    source_files: list[str] = []
-    for proof in proofs:
-        with open(proof / "cbmc-proof.txt", "r") as file:
-            file.readline()  # skip first line
-            # TODO: handle case where src file does not exist (proof created outside of cassis-verif)
-            src = file.readline().split(":")[1].strip()
-            source_files.append(src)
+    proofs: list[CBMCProof] = []
 
-    proofs = [
-        CBMCProof(name=proof.name, src=Path(src))
-        for proof, src in zip(proofs, source_files, strict=True)
-    ]
+    for proof_dir in proofs_dirs:
+        try:
+            proofs.append(_load_proof_data(proof_dir))
+
+        except HTTPException:
+            pass
 
     return sorted(proofs, key=lambda proof: proof.name)
 
 
-@router.post("/proofs", responses={400: {"model": HTTPError}})
-async def create_cbmc_proof(proof: CBMCProof) -> CBMCProof:
+@router.get(
+    "/proofs/{proof_name}",
+    responses={404: {"model": HTTPError}},
+)
+async def get_cbmc_proof(proof_name: str) -> CBMCProof:
+    """Return CBMC proof with given name."""
+    log.info(f"Get CBMC proof '{proof_name}'")
+
+    proof_dir = Path(PROOF_ROOT) / proof_name
+
+    if not proof_dir.exists():
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"Proof not found: {proof_name}")
+
+    return _load_proof_data(proof_dir)
+
+
+@router.post(
+    "/proofs",
+    responses={400: {"model": HTTPError}},
+)
+async def create_cbmc_proof(proof: CBMCProofCreate) -> CBMCProof:
     """Create a CBMC proof for function func_name in source file src_file."""
 
     log.info(f"Creating CBMC proof '{proof.name}'")
@@ -97,10 +120,11 @@ async def create_cbmc_proof(proof: CBMCProof) -> CBMCProof:
     setup_proof.rename_proof_harness(proof.name, proof_dir)
 
     # append src file to cbmc-proof.txt
-    with open(proof_dir / "cbmc-proof.txt", "a") as file:
-        print(f"{proof.name}:{proof.src}", file=file, end=linesep)
+    if proof.src is not None:
+        with open(proof_dir / "cbmc-proof.txt", "a") as file:
+            print(f"{proof.name}:{proof.src}", file=file, end=linesep)
 
-    return proof
+    return _load_proof_data(proof_dir)
 
 
 @router.delete(
@@ -126,9 +150,6 @@ async def delete_cbmc_proof(proof_name: str) -> None:
 
     except FileNotFoundError:
         pass
-
-
-# TODO: get harness files (get proof dirs and then harness files from makefile)
 
 
 # ------------------------------------------------------------
@@ -408,3 +429,45 @@ def _cleanup_archive_file(abs_file_path: str) -> None:
     """Delete archive file."""
     log.debug(f"Cleanup archive file after download: {abs_file_path}")
     remove(abs_file_path)
+
+
+def _load_proof_data(proof_dir: Path) -> CBMCProof:
+    """Loads the proof data from the given proof directory."""
+    log.debug(f"Loading proof data from '{proof_dir}'")
+
+    # get src file from cbmc-proof.txt
+    proof_file = proof_dir / "cbmc-proof.txt"
+
+    if not proof_file.exists():
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND,
+            f"Proof not found: {proof_dir.name}",
+        )
+
+    lines = proof_file.read_text().splitlines()
+    src_file = Path(lines[1].split(":")[1].strip()) if len(lines) > 1 else None
+
+    # get harness file from Makefile
+    makefile = proof_dir / "Makefile"
+
+    if not makefile.exists():
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND,
+            f"Failed to locate harness file for: {proof_dir.name}",
+        )
+
+    match = RE_HARNESS_FILE.search(makefile.read_text())
+
+    if not match:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND,
+            f"Failed to locate harness file for: {proof_dir.name}",
+        )
+
+    harness_file = match.group("name") + ".c"
+
+    return CBMCProof(
+        name=proof_dir.name,
+        src=src_file,
+        harness=harness_file,
+    )

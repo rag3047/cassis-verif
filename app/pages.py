@@ -8,6 +8,7 @@ from jinja2 import ChainableUndefined
 from logging import getLogger
 
 from .controllers.cbmc import (
+    get_cbmc_proof,
     get_cbmc_proofs,
     get_cbmc_verification_task_result_list,
     get_cbmc_verification_task_status,
@@ -76,14 +77,22 @@ async def editor(request: Request) -> HTMLResponse:
     log.info("Rendering editor page")
 
     # TODO: add support for pre-selected path/file based on proof name
-    file_path = request.query_params.get("file_path", None)
-    log.debug(f"{file_path=}")
+    proof_name = request.query_params.get("proof_name", None)
+    log.debug(f"{proof_name=}")
     # include_hidden = request.query_params.get("include_hidden", False)
     # log.debug(f"include hidden files: {include_hidden}")
 
+    selected_proof = None
+
+    if proof_name:
+        selected_proof = await get_cbmc_proof(proof_name)
+
+    log.debug(f"{selected_proof=}")
+
     context = {
         "request": request,
-        "file_path": file_path,
+        "selected_proof": selected_proof,
+        "proofs": await get_cbmc_proofs(),
         # "files": await list_directory_tree(include_hidden=include_hidden),
     }
 

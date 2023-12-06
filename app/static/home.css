@@ -22,6 +22,7 @@
     z-index: 1;
     display: flex;
     justify-content: space-between;
+    gap: 0.5rem;
 }
 
 .task {
@@ -102,6 +103,7 @@
         padding: 0.5rem;
         border-right: 2px solid var(--border-color);
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-around;
         gap: 0.5rem;

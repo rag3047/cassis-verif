@@ -4,16 +4,16 @@
 
 const confirm_delete_proof_modal = document.querySelector("#modal-confirm-delete-proof");
 
-async function delete_proof() {
-    const nameEl = confirm_delete_proof_modal.querySelector("#proof-name");
+async function delete_entry() {
+    const nameEl = confirm_delete_entry_modal.querySelector("#proof-name");
     // close modal: indicate which proof should be deleted
-    confirm_delete_proof_modal.close(nameEl.dataset.name);
+    confirm_delete_entry_modal.close(nameEl.dataset.name);
 }
 
-confirm_delete_proof_modal.addEventListener("close", async () => {
-    if (confirm_delete_proof_modal.returnValue != "cancel") {
+confirm_delete_entry_modal.addEventListener("close", async () => {
+    if (confirm_delete_entry_modal.returnValue != "cancel") {
         try {
-            await fetch(`api/v1/cbmc/proofs/${confirm_delete_proof_modal.returnValue}`, {
+            await fetch(`api/v1/cbmc/proofs/${confirm_delete_entry_modal.returnValue}`, {
                 method: "DELETE",
             });
         } catch (err) {
@@ -26,15 +26,15 @@ confirm_delete_proof_modal.addEventListener("close", async () => {
     }
 });
 
-async function show_confirm_delete_proof_modal(event) {
-    const nameEl = confirm_delete_proof_modal.querySelector("#proof-name");
+async function show_confirm_delete_entry_modal(event) {
+    const nameEl = confirm_delete_entry_modal.querySelector("#proof-name");
 
     const name = event.target.dataset.name;
     nameEl.textContent = name;
     nameEl.dataset.name = name;
 
-    confirm_delete_proof_modal.returnValue = "cancel";
-    confirm_delete_proof_modal.showModal();
+    confirm_delete_entry_modal.returnValue = "cancel";
+    confirm_delete_entry_modal.showModal();
 }
 
 //---------------------------------------------------------------------------------------------------------

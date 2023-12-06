@@ -26,6 +26,7 @@
                     <button id="btn-run-proofs" class="button" {{ 'disabled' if task_status.is_running }} onclick="run_all_proofs()">Run Proofs</button>
                     <button id="btn-cancel-proofs" class="button disabled" {{ 'disabled' if not task_status.is_running }} onclick="cancel_proof_run()">Cancel Proof Run</button>
                     <button class="button" onclick="show_update_git_config_modal()">Edit Git Config</button>
+                    <!-- TODO -->
                     <button class="button" onclick="TODO">Pull Sources</button>
                 </div>
                 <ul class="list">
@@ -33,7 +34,7 @@
                     <li class="list-item">
                         <div>
                             <h2>{{ proof.name }}</h2>
-                            <span>{{ proof.src }}</span>
+                            <span>{{ proof.src | default('N/A', true) }}</span>
                         </div>
                         <div>
                             <a class="button" href="{{ url_for('editor') }}?proof_name={{ proof.name }}">Edit</a>

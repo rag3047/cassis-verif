@@ -8,6 +8,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
         <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
     </head>
@@ -31,15 +32,16 @@
                 <div class="toolbar">
                     <button class="button" onclick="save_file(event)">Save</button>
                     <span class="notification"></span>
-                    <button class="button" onclick="hide_editor()">Hide Editor</button>
                 </div>
                 <div id="editor"></div>
             </div>
             <div class="hints-container">
                 <div class="toolbar">
-                    <button id="btn-show-editor" class="button hidden" onclick="show_editor()">Show Editor</button>
-                    <select id="sel-proof" class="dropdown">
-                        <option value="Test" selected>Test</option>
+                    <button id="btn-toggle-editor" class="button" onclick="toggle_editor()">Hide Editor</button>
+                    <select id="sel-proof" class="sel-proof" onchange="on_proof_select(event)">
+                        {% for proof in proofs %}
+                            <option value="{{ proof.name }}" data-harness="{{ proof.harness }}" {{ 'selected' if proof.name == selected_proof.name }}>{{ proof.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="hints">
@@ -49,7 +51,44 @@
             </div>
         </div>
 
+        <dialog id="contextmenu-file" class="contextmenu">
+            <ul>
+                <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete File</button></li>
+            </ul>
+        </dialog>
+
+        <dialog id="contextmenu-dir" class="contextmenu">
+            <ul>
+                <li><button data-path="" onclick="TODO">Create File</button></li>
+                <li><button data-path="" onclick="TODO">Create Folder</button></li>
+                <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete Folder</button></li>
+            </ul>
+        </dialog>
+
+        <dialog id="modal-confirm-delete-entry" class="modal">
+            <h2 class="modal-text">Delete Entry</h2>
+            <p class="modal-text">Are you sure you want to delete the following file/folder?</p>
+            <p class="modal-text code"><span id="entry-path" data-path=""></span></p>
+            <form class="modal-form" method="dialog">
+                <div class="modal-buttons">
+                    <button class="button danger" onclick="TODO">Confirm</button>
+                    <button class="button" autofocus>Cancel</button>
+                </div>
+            </form>
+        </dialog>
+
+        <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
-        <script src="{{ url_for('static', path='editor.js') }}"></script>
+        <script src="{{ url_for('static', path='editor.js') }}" async defer></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                NiceSelect.bind(document.querySelector("select"), {
+                    searchable: true,
+                    // placeholder: "select",
+                    searchtext: "Search",
+                    // selectedtext: "geselecteerd",
+                });
+            });
+        </script>
     </body>
 </html>

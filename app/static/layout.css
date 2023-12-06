@@ -1,12 +1,13 @@
 html {
-    height: 100%;
-    font-family: Helvetica, Arial, sans-serif;
+    --font: Helvetica, Arial, sans-serif;
+    --text-color: white;
     --bg-dark: rgba(24, 24, 24, 255);
     --bg-light: rgba(31, 31, 31, 255);
     --border-color: rgba(38, 38, 38, 255);
-    --text-color: white;
     --danger-color: rgba(152, 70, 70, 255);
     --success-color: rgba(97, 152, 70, 255);
+    height: 100%;
+    font-family: var(--font);
 }
 
 body {
@@ -97,6 +98,10 @@ body {
 
 .modal::backdrop {
     background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal:focus-visible {
+    outline: none;
 }
 
 .modal-form {
@@ -216,4 +221,83 @@ body {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* NiceSelect2 Style override  */
+
+.nice-select {
+    color: white;
+    background-color: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-radius: 2px;
+    font-size: 1rem;
+    outline: none;
+    float: none;
+}
+
+.nice-select:focus {
+    border-color: gray;
+}
+
+.nice-select:hover {
+    border-color: gray;
+    cursor: pointer;
+}
+
+.nice-select .nice-select-dropdown {
+    background-color: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-radius: 2px;
+    margin-top: 2px;
+}
+
+.nice-select.open .nice-select-dropdown {
+    width: 100%;
+    transform: scale(1) translateY(0) translateX(-2px);
+}
+
+.nice-select .nice-select-search-box {
+    padding: 0;
+}
+
+.nice-select .nice-select-search {
+    color: white;
+    background-color: var(--bg-dark);
+    border: none;
+    border-bottom: 2px solid var(--border-color);
+    border-radius: 0px;
+    margin: 0;
+    padding: 0.5rem 1rem 0.5rem 1rem;
+    font-family: var(--font);
+}
+
+.nice-select .nice-select-search::placeholder {
+    color: gray;
+}
+
+.nice-select .list {
+    border-radius: 0px;
+}
+
+.nice-select .option {
+    border-radius: 0px;
+    padding: 0 1rem 0 1rem;
+}
+
+.nice-select .option:first-child {
+    border-top: none;
+}
+
+.nice-select .option:last-child {
+    border-bottom: none;
+}
+
+.nice-select .option.selected {
+    font-weight: bold;
+}
+
+.nice-select .option:hover,
+.nice-select .option.selected.focus,
+.nice-select .option.focus {
+    background-color: var(--bg-light);
 }
