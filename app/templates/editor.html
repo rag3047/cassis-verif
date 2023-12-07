@@ -59,8 +59,8 @@
 
         <dialog id="contextmenu-dir" class="contextmenu">
             <ul>
-                <li><button data-path="" onclick="TODO">Create File</button></li>
-                <li><button data-path="" onclick="TODO">Create Folder</button></li>
+                <li><button data-path="" onclick="show_create_file_modal(event)">Create File</button></li>
+                <li><button data-path="" onclick="show_create_dir_modal(event)">Create Folder</button></li>
                 <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete Folder</button></li>
             </ul>
         </dialog>
@@ -71,7 +71,19 @@
             <p class="modal-text code"><span id="entry-path" data-path=""></span></p>
             <form class="modal-form" method="dialog">
                 <div class="modal-buttons">
-                    <button class="button danger" onclick="TODO">Confirm</button>
+                    <button class="button danger" onclick="delete_entry()">Confirm</button>
+                    <button class="button" autofocus>Cancel</button>
+                </div>
+            </form>
+        </dialog>
+
+        <dialog id="modal-create-entry" class="modal">
+            <h2 class="modal-text">Create <span id="entry-type" data-type=""></span></h2>
+            <p class="modal-text alert danger hidden"></p>
+            <form class="modal-form modal-form-25" method="dialog">
+                <input id="entry-name" type="text" placeholder="Name" value="" />
+                <div class="modal-buttons">
+                    <button class="button success" onclick="create_entry(event)" data-parent="">Create</button>
                     <button class="button" autofocus>Cancel</button>
                 </div>
             </form>
@@ -79,14 +91,12 @@
 
         <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
-        <script src="{{ url_for('static', path='editor.js') }}" async defer></script>
+        <script src="{{ url_for('static', path='editor.js') }}"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 NiceSelect.bind(document.querySelector("select"), {
                     searchable: true,
-                    // placeholder: "select",
                     searchtext: "Search",
-                    // selectedtext: "geselecteerd",
                 });
             });
         </script>

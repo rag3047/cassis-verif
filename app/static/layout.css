@@ -130,6 +130,10 @@ body {
     width: 33vw;
 }
 
+.modal-form.modal-form-25 {
+    width: 25vw;
+}
+
 .modal-buttons {
     display: flex;
     justify-content: flex-end;

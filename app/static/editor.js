@@ -151,6 +151,7 @@ const contextmenu_dir = document.querySelector("#contextmenu-dir");
 // Note: we use the hidden select (replaced by nice-select2) to retrieve the harness file name
 const harness_file = document.querySelector("#sel-proof option[selected]")?.getAttribute("data-harness");
 let selected_path = null;
+let dir_tree = null;
 
 async function build_directory_tree() {
     const root = new TreeNode("root");
@@ -163,7 +164,7 @@ async function build_directory_tree() {
 
         let parent = root;
         for (const part of parts) {
-            const child = parent.getChildren().find((child) => child.getUserObject().toString() == part);
+            const child = parent.getChildren().find((child) => child.toString() == part);
 
             if (child) {
                 parent = child;
@@ -190,7 +191,7 @@ async function build_directory_tree() {
 
             if (name == harness_file) {
                 selected_path = new TreePath(root, node);
-                // TODO: ensure monaco editor is loaded (not always the case)
+                // TODO: ensure monaco editor is loaded (not always the case, seems to be an issue only when hard-relading the page)
                 await on_file_selected(entry.path);
             }
         }
@@ -203,10 +204,33 @@ async function build_directory_tree() {
     return new TreeView(root, "#dir-tree", { show_root: false });
 }
 
-build_directory_tree().then((tree) => {
+function remove_tree_node_by_path(path) {
+    let parent = dir_tree.getRoot();
+    let node = null;
+
+    for (const part of path.split("/")) {
+        node = parent.getChildren().find((child) => child.toString() == part);
+
+        if (node.getUserObject().path == path) break;
+        parent = node;
+    }
+
+    if (node) {
+        parent.removeChild(node);
+        dir_tree.reload();
+    }
+}
+
+function add_tree_node(path, type) {
+    // TODO
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    dir_tree = await build_directory_tree();
+
     if (selected_path) {
-        tree.expandPath(selected_path);
-        tree.reload();
+        dir_tree.expandPath(selected_path);
+        dir_tree.reload();
     }
 });
 
@@ -232,26 +256,32 @@ async function on_proof_select(event) {
 const confirm_delete_entry_modal = document.querySelector("#modal-confirm-delete-entry");
 
 async function delete_entry() {
-    const nameEl = confirm_delete_entry_modal.querySelector("#entry-name");
+    const pathEl = confirm_delete_entry_modal.querySelector("#entry-path");
     // close modal: indicate which proof should be deleted
-    confirm_delete_entry_modal.close(nameEl.dataset.path);
+    confirm_delete_entry_modal.close(pathEl.dataset.path);
 }
 
 confirm_delete_entry_modal.addEventListener("close", async () => {
     if (confirm_delete_entry_modal.returnValue != "cancel") {
+        let response;
+
         try {
-            // TODO
-            // await fetch(`api/v1/cbmc/proofs/${confirm_delete_entry_modal.returnValue}`, {
-            //     method: "DELETE",
-            // });
+            response = await fetch(`api/v1/files/${confirm_delete_entry_modal.returnValue}`, {
+                method: "DELETE",
+            });
         } catch (err) {
             console.error(err);
-            alert(`Failed to delete proof, check console for details.`);
+            alert(`Failed to delete file/folder, check console for details.`);
             return;
         }
 
-        // TODO check: is this viable? might lose edits in editor? -> only update/reload dir tree?
-        location.reload(true);
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Failed to delete file/folder: ${error.detail}`);
+            return;
+        }
+
+        remove_tree_node_by_path(confirm_delete_entry_modal.returnValue);
     }
 });
 
@@ -264,4 +294,85 @@ async function show_confirm_delete_entry_modal(event) {
 
     confirm_delete_entry_modal.returnValue = "cancel";
     confirm_delete_entry_modal.showModal();
+}
+
+//---------------------------------------------------------------------------------------------------------
+// Create File/Folder Modal
+//---------------------------------------------------------------------------------------------------------
+
+const create_entry_modal = document.querySelector("#modal-create-entry");
+const create_entry_modal_alert = create_entry_modal.querySelector(".alert");
+const create_entry_name_input = create_entry_modal.querySelector("#entry-name");
+const create_entry_type_span = create_entry_modal.querySelector("#entry-type");
+const create_entry_confirm_button = create_entry_modal.querySelector("#modal-create-entry .button.success");
+
+async function create_entry(event) {
+    if (!create_entry_name_input.value) {
+        event.preventDefault();
+        create_entry_modal_alert.textContent = "Error: Name must not be empty";
+        create_entry_modal_alert.classList.remove("hidden");
+        return;
+    }
+
+    // build path from root to new element
+    const path = create_entry_confirm_button.dataset.parent + "/" + create_entry_name_input.value;
+
+    // close modal
+    confirm_delete_entry_modal.close(path);
+}
+
+create_entry_modal.addEventListener("close", async () => {
+    if (create_entry_modal.returnValue != "cancel") {
+        let response;
+
+        try {
+            response = await fetch("api/v1/files", {
+                method: "POST",
+                body: JSON.stringify({
+                    type: create_entry_type_span.dataset.type,
+                    path: create_entry_modal.returnValue,
+                }),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to create file/folder, check console for details.`);
+            return;
+        }
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Failed to create file/folder: ${error.detail}`);
+            return;
+        }
+
+        // update dir_tree
+        add_tree_node(create_entry_modal.returnValue, create_entry_type_span.dataset.type);
+    }
+});
+
+async function show_create_file_modal(event) {
+    create_entry_type_span.textContent = "File";
+    create_entry_type_span.dataset.type = "file";
+
+    // reset input
+    create_entry_name_input.value = "";
+    create_entry_confirm_button.dataset.parent = event.target.dataset.path;
+
+    create_entry_modal.returnValue = "cancel";
+    create_entry_modal.showModal();
+}
+
+async function show_create_dir_modal(event) {
+    create_entry_type_span.textContent = "Folder";
+    create_entry_type_span.dataset.type = "dir";
+
+    // reset input
+    create_entry_name_input.value = "";
+    create_entry_confirm_button.dataset.parent = event.target.dataset.path;
+
+    create_entry_modal.returnValue = "cancel";
+    create_entry_modal.showModal();
 }

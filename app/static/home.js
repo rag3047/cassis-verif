@@ -174,7 +174,7 @@ async function show_add_proof_modal() {
     pagination.dataset.offset = 0;
     input_search_function.value = "";
     function_list.innerHTML = '<li class="list-item-empty"><h2>Please enter a function name...</h2></li>';
-    add_proof_modal_alert.classList.add("hidden");
+    create_entry_modal_alert.classList.add("hidden");
     pagination.classList.add("hidden");
 
     add_proof_modal.returnValue = "cancel";
@@ -205,8 +205,8 @@ async function add_proof(event) {
     }
 
     if (response.error_code) {
-        add_proof_modal_alert.textContent = `Error: ${response.detail}`;
-        add_proof_modal_alert.classList.remove("hidden");
+        create_entry_modal_alert.textContent = `Error: ${response.detail}`;
+        create_entry_modal_alert.classList.remove("hidden");
         return;
     }
 
