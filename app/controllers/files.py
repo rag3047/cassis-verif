@@ -86,7 +86,7 @@ async def create_path(
     path: FileSystemPath,
 ) -> None:
     """Creates a new directory or file."""
-    log.info(f"Creating path '{path}'")
+    log.info(f"Creating path '{path.path}' (type={path.type})")
 
     abs_path = Path(DATA_DIR) / path.path
 

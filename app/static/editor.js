@@ -145,9 +145,6 @@ function show_contextmenu(menu) {
     };
 }
 
-const contextmenu_file = document.querySelector("#contextmenu-file");
-const contextmenu_dir = document.querySelector("#contextmenu-dir");
-
 // Note: we use the hidden select (replaced by nice-select2) to retrieve the harness file name
 const harness_file = document.querySelector("#sel-proof option[selected]")?.getAttribute("data-harness");
 let selected_path = null;
@@ -181,27 +178,33 @@ async function build_directory_tree() {
         });
 
         parent.addChild(node);
+        tree_node_add_events(node, entry);
 
-        if (entry.type == "file") {
-            node.on("select", async (node) => {
-                await on_file_selected(entry.path);
-            });
-
-            node.on("contextmenu", show_contextmenu(contextmenu_file));
-
-            if (name == harness_file) {
-                selected_path = new TreePath(root, node);
-                // TODO: ensure monaco editor is loaded (not always the case, seems to be an issue only when hard-relading the page)
-                await on_file_selected(entry.path);
-            }
-        }
-
-        if (entry.type == "dir") {
-            node.on("contextmenu", show_contextmenu(contextmenu_dir));
+        if (entry.type == "file" && name == harness_file) {
+            selected_path = new TreePath(root, node);
+            // TODO: ensure monaco editor is loaded (not always the case, seems to be an issue only when hard-relading the page)
+            await on_file_selected(entry.path);
         }
     }
 
     return new TreeView(root, "#dir-tree", { show_root: false });
+}
+
+const contextmenu_file = document.querySelector("#contextmenu-file");
+const contextmenu_dir = document.querySelector("#contextmenu-dir");
+
+function tree_node_add_events(node, entry) {
+    if (entry.type == "file") {
+        node.on("select", async () => {
+            await on_file_selected(entry.path);
+        });
+
+        node.on("contextmenu", show_contextmenu(contextmenu_file));
+    }
+
+    if (entry.type == "dir") {
+        node.on("contextmenu", show_contextmenu(contextmenu_dir));
+    }
 }
 
 function remove_tree_node_by_path(path) {
@@ -221,8 +224,106 @@ function remove_tree_node_by_path(path) {
     }
 }
 
-function add_tree_node(path, type) {
+function sort_tree_nodes(node1, node2) {
+    const data1 = node1.getUserObject();
+    const data2 = node2.getUserObject();
+
+    if (data1.type == data2.type) {
+        return node1.toString().localeCompare(node2.toString());
+    } else if (data1.type == "dir") {
+        return -1;
+    } else {
+        return 1;
+    }
+}
+
+/**
+ *
+ * @param {string} path
+ * @param {string} type
+ */
+async function add_tree_path(path, type) {
+    const parts = path.split("/");
+    console.log(parts);
+
     // TODO
+    let parent = dir_tree.getRoot();
+    let temp_node = null;
+
+    // find parent node
+    do {
+        const part = parts.shift();
+        temp_node = parent.getChildren().find((child) => child.toString() == part);
+
+        if (!temp_node) break;
+        parent = temp_node;
+    } while (temp_node != null);
+
+    // TEST END
+
+    let parent = dir_tree.getRoot();
+    let temp_node = null;
+
+    let i = 0;
+    for (; i < parts.length - 1; i++) {
+        temp_node = parent.getChildren().find((child) => child.toString() == parts[i]);
+
+        if (!temp_node) break;
+        parent = temp_node;
+    }
+
+    console.log(parent.toString());
+
+    // create missing parent nodes (if any)
+    for (; i < parts.length - 1; i++) {
+        // TODO: Fix
+        const entry = {
+            path: parts.slice(0, i + 1).join("/"),
+            type: "dir",
+            toString: () => parts[i],
+        };
+
+        console.log(entry, entry.toString());
+
+        const node = new TreeNode(entry, {
+            allowChildren: true,
+            forceParent: true,
+            selected: false,
+            expanded: true,
+        });
+
+        tree_node_add_events(node, entry);
+
+        parent.addChild(node);
+        parent.setExpanded(true);
+        parent.getChildren().sort(sort_tree_nodes);
+        parent = node;
+    }
+
+    console.log(parent.toString());
+
+    const name = parts[parts.length - 1];
+    const entry = {
+        path,
+        type,
+        toString: () => name,
+    };
+
+    console.log(entry, entry.toString());
+
+    const node = new TreeNode(entry, {
+        allowChildren: type == "dir",
+        forceParent: type == "dir",
+        selected: false,
+        expanded: false,
+    });
+
+    tree_node_add_events(node, entry);
+
+    parent.addChild(node);
+    parent.setExpanded(true);
+    parent.getChildren().sort(sort_tree_nodes);
+    dir_tree.reload();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -307,8 +408,9 @@ const create_entry_type_span = create_entry_modal.querySelector("#entry-type");
 const create_entry_confirm_button = create_entry_modal.querySelector("#modal-create-entry .button.success");
 
 async function create_entry(event) {
+    event.preventDefault();
+
     if (!create_entry_name_input.value) {
-        event.preventDefault();
         create_entry_modal_alert.textContent = "Error: Name must not be empty";
         create_entry_modal_alert.classList.remove("hidden");
         return;
@@ -317,41 +419,38 @@ async function create_entry(event) {
     // build path from root to new element
     const path = create_entry_confirm_button.dataset.parent + "/" + create_entry_name_input.value;
 
-    // close modal
-    confirm_delete_entry_modal.close(path);
-}
+    let response;
 
-create_entry_modal.addEventListener("close", async () => {
-    if (create_entry_modal.returnValue != "cancel") {
-        let response;
-
-        try {
-            response = await fetch("api/v1/files", {
-                method: "POST",
-                body: JSON.stringify({
-                    type: create_entry_type_span.dataset.type,
-                    path: create_entry_modal.returnValue,
-                }),
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-        } catch (err) {
-            console.error(err);
-            alert(`Failed to create file/folder, check console for details.`);
-            return;
-        }
-
-        if (!response.ok) {
-            const error = await response.json();
-            alert(`Failed to create file/folder: ${error.detail}`);
-            return;
-        }
-
-        // update dir_tree
-        add_tree_node(create_entry_modal.returnValue, create_entry_type_span.dataset.type);
+    try {
+        response = await fetch("api/v1/files", {
+            method: "POST",
+            body: JSON.stringify({
+                type: create_entry_type_span.dataset.type,
+                path: path,
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to create file/folder, check console for details.`);
+        return;
     }
-});
+
+    if (!response.ok) {
+        const error = await response.json();
+        create_entry_modal_alert.textContent = `Error: ${error.detail}`;
+        create_entry_modal_alert.classList.remove("hidden");
+        return;
+    }
+
+    // update dir_tree
+    add_tree_path(path, create_entry_type_span.dataset.type);
+
+    // close modal
+    create_entry_modal.close();
+}
 
 async function show_create_file_modal(event) {
     create_entry_type_span.textContent = "File";
@@ -359,6 +458,7 @@ async function show_create_file_modal(event) {
 
     // reset input
     create_entry_name_input.value = "";
+    create_entry_modal_alert.classList.add("hidden");
     create_entry_confirm_button.dataset.parent = event.target.dataset.path;
 
     create_entry_modal.returnValue = "cancel";
@@ -371,6 +471,7 @@ async function show_create_dir_modal(event) {
 
     // reset input
     create_entry_name_input.value = "";
+    create_entry_modal_alert.classList.add("hidden");
     create_entry_confirm_button.dataset.parent = event.target.dataset.path;
 
     create_entry_modal.returnValue = "cancel";

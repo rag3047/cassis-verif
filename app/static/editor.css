@@ -8,11 +8,23 @@
     min-width: 7rem;
     max-width: 33vw;
     padding: 0.5rem;
-    /* position: relative; */
 
     & li span {
         display: inline-block;
         white-space: nowrap;
+    }
+
+    & .tj_description {
+        width: 100%;
+    }
+
+    & .tj_description:hover {
+        background-color: gray;
+    }
+
+    & .tj_leaf {
+        margin: 0;
+        padding-left: 29px;
     }
 }
 
