@@ -148,7 +148,7 @@ function show_contextmenu(menu) {
 // Note: we use the hidden select (replaced by nice-select2) to retrieve the harness file name
 const harness_file = document.querySelector("#sel-proof option[selected]")?.getAttribute("data-harness");
 let selected_path = null;
-let dir_tree = null;
+let tree_view = null;
 
 async function build_directory_tree() {
     const root = new TreeNode("root");
@@ -208,7 +208,7 @@ function tree_node_add_events(node, entry) {
 }
 
 function remove_tree_node_by_path(path) {
-    let parent = dir_tree.getRoot();
+    let parent = tree_view.getRoot();
     let node = null;
 
     for (const part of path.split("/")) {
@@ -220,7 +220,7 @@ function remove_tree_node_by_path(path) {
 
     if (node) {
         parent.removeChild(node);
-        dir_tree.reload();
+        tree_view.reload();
     }
 }
 
@@ -244,46 +244,28 @@ function sort_tree_nodes(node1, node2) {
  */
 async function add_tree_path(path, type) {
     const parts = path.split("/");
-    console.log(parts);
 
-    // TODO
-    let parent = dir_tree.getRoot();
-    let temp_node = null;
-
-    // find parent node
-    do {
-        const part = parts.shift();
-        temp_node = parent.getChildren().find((child) => child.toString() == part);
-
-        if (!temp_node) break;
-        parent = temp_node;
-    } while (temp_node != null);
-
-    // TEST END
-
-    let parent = dir_tree.getRoot();
+    let parent = tree_view.getRoot();
     let temp_node = null;
 
     let i = 0;
+    // skip existing parent nodes
     for (; i < parts.length - 1; i++) {
-        temp_node = parent.getChildren().find((child) => child.toString() == parts[i]);
+        const part = parts[i];
+        temp_node = parent.getChildren().find((child) => child.toString() == part);
 
         if (!temp_node) break;
         parent = temp_node;
     }
 
-    console.log(parent.toString());
-
     // create missing parent nodes (if any)
     for (; i < parts.length - 1; i++) {
-        // TODO: Fix
+        const part = parts[i];
         const entry = {
             path: parts.slice(0, i + 1).join("/"),
             type: "dir",
-            toString: () => parts[i],
+            toString: () => part,
         };
-
-        console.log(entry, entry.toString());
 
         const node = new TreeNode(entry, {
             allowChildren: true,
@@ -300,16 +282,13 @@ async function add_tree_path(path, type) {
         parent = node;
     }
 
-    console.log(parent.toString());
-
-    const name = parts[parts.length - 1];
+    // create final node (file or folder)
+    const name = parts.pop();
     const entry = {
         path,
         type,
         toString: () => name,
     };
-
-    console.log(entry, entry.toString());
 
     const node = new TreeNode(entry, {
         allowChildren: type == "dir",
@@ -323,17 +302,19 @@ async function add_tree_path(path, type) {
     parent.addChild(node);
     parent.setExpanded(true);
     parent.getChildren().sort(sort_tree_nodes);
-    dir_tree.reload();
+    tree_view.reload();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    dir_tree = await build_directory_tree();
+    tree_view = await build_directory_tree();
 
     if (selected_path) {
-        dir_tree.expandPath(selected_path);
-        dir_tree.reload();
+        tree_view.expandPath(selected_path);
+        tree_view.reload();
     }
 });
+
+// TODO: create top level file/folder
 
 //---------------------------------------------------------------------------------------------------------
 // Hints
