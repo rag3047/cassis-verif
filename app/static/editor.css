@@ -63,10 +63,14 @@
     color: white;
     background-color: var(--bg-dark);
     overflow: auto;
+
+    & > div {
+        padding: 0.5rem;
+    }
 }
 
-.hints {
-    padding: 0.5rem;
+.no-proof-selected {
+    padding-left: 0.5rem;
 }
 
 .notification {

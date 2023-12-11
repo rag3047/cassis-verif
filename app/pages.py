@@ -12,6 +12,7 @@ from .controllers.cbmc import (
     get_cbmc_proofs,
     get_cbmc_verification_task_result_list,
     get_cbmc_verification_task_status,
+    get_cbmc_proof_loop_info,
 )
 
 log = getLogger(__name__)
@@ -76,16 +77,15 @@ async def doxygen(request: Request) -> HTMLResponse:
 async def editor(request: Request) -> HTMLResponse:
     log.info("Rendering editor page")
 
-    # TODO: add support for pre-selected path/file based on proof name
     proof_name = request.query_params.get("proof_name", None)
     log.debug(f"{proof_name=}")
-    # include_hidden = request.query_params.get("include_hidden", False)
-    # log.debug(f"include hidden files: {include_hidden}")
 
     selected_proof = None
+    loops = []
 
     if proof_name:
         selected_proof = await get_cbmc_proof(proof_name)
+        loops = await get_cbmc_proof_loop_info(proof_name)
 
     log.debug(f"{selected_proof=}")
 
@@ -93,7 +93,7 @@ async def editor(request: Request) -> HTMLResponse:
         "request": request,
         "selected_proof": selected_proof,
         "proofs": await get_cbmc_proofs(),
-        # "files": await list_directory_tree(include_hidden=include_hidden),
+        "loops": loops,
     }
 
     return templates.TemplateResponse("editor.html", context)

@@ -30,6 +30,7 @@
             </aside>
             <div class="editor-container">
                 <div class="toolbar">
+                    <!-- TODO: Add support for multiple Editor Tabs -->
                     <button class="button" onclick="save_file(event)">Save</button>
                     <span class="notification"></span>
                 </div>
@@ -38,15 +39,40 @@
             <div class="hints-container">
                 <div class="toolbar">
                     <button id="btn-toggle-editor" class="button" onclick="toggle_editor()">Hide Editor</button>
-                    <select id="sel-proof" class="sel-proof" onchange="on_proof_select(event)">
+                    <button id="btn-refresh-hints" class="button" {{ 'disabled' if selected_proof is none }} onclick="refresh_hints(true)">Refresh</button>
+                    <select id="sel-proof" class="sel-proof" onchange="refresh_hints()">
                         {% for proof in proofs %}
                             <option value="{{ proof.name }}" data-harness="{{ proof.harness }}" {{ 'selected' if proof.name == selected_proof.name }}>{{ proof.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="hints">
-                    <h1>TODO: Hints</h1>
-                    <!-- <div class="lds-dual-ring"></div> -->
+                <div>
+                    <!-- TODO: center this -->
+                    <div class="loading hidden">
+                        <div class="lds-dual-ring"></div>
+                    </div>
+                    <div class="hints {{ 'hidden' if selected_proof is none }}">
+                        <p>AI Description goes here</p>
+                        <div>Doxygen graphs go here</div>
+                        <div>Global Function State goes here</div>
+                        <div>
+                            <h3>Loop Unwinding</h3>
+                            <p>
+                                The following Loops were detected in the execution trace of the selected proof.
+                                A corresponding UNWINDSET entry should be added to the proof makefile.
+                            </p>
+                            <ul>
+                                {% for loop in loops %}
+                                <li>
+                                    TODO
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="no-proof-selected {{ 'hidden' if selected_proof is not none }}">Please select a proof to display hints</h3>
+                    </div>
                 </div>
             </div>
         </div>
@@ -92,13 +118,5 @@
         <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>
         <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
         <script src="{{ url_for('static', path='editor.js') }}"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                NiceSelect.bind(document.querySelector("select"), {
-                    searchable: true,
-                    searchtext: "Search",
-                });
-            });
-        </script>
     </body>
 </html>

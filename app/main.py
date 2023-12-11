@@ -51,6 +51,7 @@ for controller in controllers:
 
 app.include_router(pages)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# TODO: add mount point for clang language server
 
 
 @app.exception_handler(HTTPException)

@@ -3,20 +3,18 @@ import re
 from typing import Literal
 from os import getenv, remove, linesep
 from logging import getLogger
-from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket
+from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket, status
 from websockets.exceptions import ConnectionClosedOK
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, UUID4
 from pathlib import Path
 from shutil import rmtree, make_archive
-from http import HTTPStatus
 from cbmc_starter_kit import setup_proof
 from asyncio import sleep
-from asyncio.subprocess import Process, create_subprocess_exec, PIPE
+from asyncio.subprocess import Process, create_subprocess_exec, PIPE, DEVNULL
 from datetime import datetime
 from io import TextIOWrapper
 
-# from subprocess import Popen,
 
 from ..utils.errors import HTTPError
 
@@ -29,6 +27,11 @@ CBMC_PROOFS_TASK: Process | None = None
 CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
 
 RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
+RE_LOOP_NAME = re.compile(r"^Loop (?P<name>.+):$", re.MULTILINE)
+RE_LOOP_DATA = re.compile(
+    r"^\s+file (?P<file>.+?) line (?P<line>\d+?) function (?P<function>.+)$",
+    re.MULTILINE,
+)
 
 router = APIRouter(prefix="/cbmc", tags=["cbmc"])
 
@@ -75,7 +78,7 @@ async def get_cbmc_proofs() -> list[CBMCProof]:
 
 @router.get(
     "/proofs/{proof_name}",
-    responses={404: {"model": HTTPError}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def get_cbmc_proof(proof_name: str) -> CBMCProof:
     """Return CBMC proof with given name."""
@@ -84,14 +87,14 @@ async def get_cbmc_proof(proof_name: str) -> CBMCProof:
     proof_dir = Path(PROOF_ROOT) / proof_name
 
     if not proof_dir.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"Proof not found: {proof_name}")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Proof not found: {proof_name}")
 
     return _load_proof_data(proof_dir)
 
 
 @router.post(
     "/proofs",
-    responses={400: {"model": HTTPError}},
+    responses={status.HTTP_400_BAD_REQUEST: {"model": HTTPError}},
 )
 async def create_cbmc_proof(proof: CBMCProofCreate) -> CBMCProof:
     """Create a CBMC proof for function func_name in source file src_file."""
@@ -104,7 +107,8 @@ async def create_cbmc_proof(proof: CBMCProofCreate) -> CBMCProof:
 
     except FileExistsError:
         raise HTTPException(
-            HTTPStatus.BAD_REQUEST, f"Proof with name '{proof.name}' already exists"
+            status.HTTP_400_BAD_REQUEST,
+            f"Proof with name '{proof.name}' already exists",
         )
 
     for filename in setup_proof.proof_template_filenames():
@@ -124,13 +128,15 @@ async def create_cbmc_proof(proof: CBMCProofCreate) -> CBMCProof:
         with open(proof_dir / "cbmc-proof.txt", "a") as file:
             print(f"{proof.name}:{proof.src}", file=file, end=linesep)
 
+    # TODO: find corresponding header file (if any) and insert include statement in harness file
+
     return _load_proof_data(proof_dir)
 
 
 @router.delete(
     "/proofs/{proof_name}",
-    status_code=HTTPStatus.NO_CONTENT,
-    responses={409: {"model": HTTPError}},
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def delete_cbmc_proof(proof_name: str) -> None:
     """Delete CBMC proof."""
@@ -138,7 +144,7 @@ async def delete_cbmc_proof(proof_name: str) -> None:
 
     if CBMC_PROOFS_TASK is not None:
         raise HTTPException(
-            HTTPStatus.CONFLICT,
+            status.HTTP_409_CONFLICT,
             """
             Cannot delete proof while verification task is running.
             Wait until task is completed or cancel task.
@@ -150,6 +156,87 @@ async def delete_cbmc_proof(proof_name: str) -> None:
 
     except FileNotFoundError:
         pass
+
+
+class CBMCLoop(BaseModel):
+    name: str
+    function: str
+    file: str
+    line: int
+
+
+@router.get(
+    "/proofs/{proof_name}/loops",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": HTTPError},
+        status.HTTP_409_CONFLICT: {"model": HTTPError},
+    },
+)
+async def get_cbmc_proof_loop_info(
+    proof_name: str, rebuild: bool = False
+) -> list[CBMCLoop]:
+    """Return a list of cbmc loops."""
+    log.info(f"Get loop info for proof '{proof_name}' ({rebuild=})")
+
+    proof = await get_cbmc_proof(proof_name)
+    proof_dir = Path(PROOF_ROOT) / proof_name
+    goto_binary = proof_dir / "gotos" / proof.harness.replace(".c", ".goto")
+
+    # only build goto binary if it doesn't exist or rebuild is True
+    if rebuild or not goto_binary.exists():
+        if CBMC_PROOFS_TASK is not None:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                """Cannot rebuild proof while verification task is running.""",
+            )
+
+        task = await create_subprocess_exec(
+            "make",
+            "veryclean",
+            "goto",
+            cwd=str(proof_dir),
+            stdout=DEVNULL,
+            stderr=DEVNULL,
+        )
+
+        returncode = await task.wait()
+
+        if returncode != 0:
+            log.error("Failed to build goto binary")
+            return []
+
+    task = await create_subprocess_exec(
+        "cbmc",
+        "--show-loops",
+        str(goto_binary),
+        cwd=str(proof_dir),
+        stdout=PIPE,
+        stderr=DEVNULL,
+    )
+
+    stdout, _ = await task.communicate()
+
+    if task.returncode != 0:
+        log.error("Failed to get loop info")
+        return []
+
+    stdout_txt = stdout.decode("ascii")
+
+    loop_names: list[str] = RE_LOOP_NAME.findall(stdout_txt)
+    loop_data: list[tuple[str, str, str]] = RE_LOOP_DATA.findall(stdout_txt)
+
+    loops = [
+        CBMCLoop(
+            name=name,
+            function=function,
+            line=int(line),
+            # builtin library files are enclosed in <>, everything else starts with "/"
+            file=file[len(DATA_DIR) + 1 :] if file.startswith(DATA_DIR) else file,
+        )
+        for name, (file, line, function) in zip(loop_names, loop_data, strict=True)
+    ]
+
+    return sorted(loops, key=lambda loop: loop.name)
 
 
 # ------------------------------------------------------------
@@ -169,7 +256,7 @@ class CBMCResult(BaseModel):
 
 @router.post(
     "/task",
-    responses={409: {"model": HTTPError}},
+    responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     """Execute all CBMC proofs."""
@@ -177,7 +264,10 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     log.info("Start CBMC verification task")
 
     if CBMC_PROOFS_TASK is not None:
-        raise HTTPException(HTTPStatus.CONFLICT, "Verification Task already running")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Verification Task already running",
+        )
 
     num_proof_runs = len(await get_cbmc_verification_task_result_list())
 
@@ -218,8 +308,8 @@ async def get_cbmc_verification_task_status() -> CBMCTaskStatus:
 
 @router.delete(
     "/task",
-    status_code=HTTPStatus.NO_CONTENT,
-    responses={409: {"model": HTTPError}},
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def cancel_cbmc_verification_task(tasks: BackgroundTasks) -> None:
     """Cancel CBMC verification task"""
@@ -227,7 +317,7 @@ async def cancel_cbmc_verification_task(tasks: BackgroundTasks) -> None:
     log.info("Canceling CBMC proofs")
 
     if CBMC_PROOFS_TASK is None:
-        raise HTTPException(HTTPStatus.CONFLICT, "Verification Task not running")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Verification Task not running")
 
     # TODO: fix this
     CBMC_PROOFS_TASK.kill()
@@ -307,7 +397,7 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
 
 @router.get(
     "/results/{version}/{file_path:path}",
-    responses={404: {"model": HTTPError}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def get_cbmc_verification_task_result(
     version: UUID4 | None = None,
@@ -331,15 +421,18 @@ async def get_cbmc_verification_task_result(
     log.debug(f"{path=}")
 
     if not path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"File not found: {file_path}")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"File not found: {file_path}")
 
     return FileResponse(path)
 
 
 @router.delete(
     "/results/{version}",
-    status_code=HTTPStatus.NO_CONTENT,
-    responses={409: {"model": HTTPError}},
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": HTTPError},
+        status.HTTP_409_CONFLICT: {"model": HTTPError},
+    },
 )
 async def delete_cbmc_verification_task_results(version: UUID4) -> None:
     """Delete results of CBMC proof execution."""
@@ -350,21 +443,23 @@ async def delete_cbmc_verification_task_results(version: UUID4) -> None:
 
     if CBMC_PROOFS_TASK is not None:
         raise HTTPException(
-            HTTPStatus.CONFLICT,
+            status.HTTP_409_CONFLICT,
             "Cannot delete results while verification task is running.",
         )
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs/{version_str}")
 
     if not path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"Version not found: {version_str}")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"Version not found: {version_str}"
+        )
 
     rmtree(path)
 
 
 @router.get(
     "/results/download",
-    responses={404: {"model": HTTPError}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def download_cbmc_verification_task_result(
     version: UUID4,
@@ -380,7 +475,10 @@ async def download_cbmc_verification_task_result(
     path = Path(PROOF_ROOT) / "output/litani/runs" / version_str
 
     if not path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"Result not found: {version_str}")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Result not found: {version_str}",
+        )
 
     abs_file_path = make_archive(
         version_str,  # archive file name
@@ -440,7 +538,7 @@ def _load_proof_data(proof_dir: Path) -> CBMCProof:
 
     if not proof_file.exists():
         raise HTTPException(
-            HTTPStatus.NOT_FOUND,
+            status.HTTP_404_NOT_FOUND,
             f"Proof not found: {proof_dir.name}",
         )
 
@@ -452,7 +550,7 @@ def _load_proof_data(proof_dir: Path) -> CBMCProof:
 
     if not makefile.exists():
         raise HTTPException(
-            HTTPStatus.NOT_FOUND,
+            status.HTTP_404_NOT_FOUND,
             f"Failed to locate harness file for: {proof_dir.name}",
         )
 
@@ -460,7 +558,7 @@ def _load_proof_data(proof_dir: Path) -> CBMCProof:
 
     if not match:
         raise HTTPException(
-            HTTPStatus.NOT_FOUND,
+            status.HTTP_404_NOT_FOUND,
             f"Failed to locate harness file for: {proof_dir.name}",
         )
 

@@ -320,16 +320,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Hints
 //---------------------------------------------------------------------------------------------------------
 
-async function on_proof_select(event) {
-    console.log(event);
+const hints_container = document.querySelector(".hints-container");
+const hints = hints_container.querySelector(".hints");
+const loading_indicator = hints_container.querySelector(".loading");
+const no_proof_selected = hints_container.querySelector(".no-proof-selected");
+const refresh_hints_button = hints_container.querySelector("#btn-refresh-hints");
+const sel_proof = hints_container.querySelector("#sel-proof");
+
+async function refresh_hints(hard_refresh = false) {
+    const proof_name = sel_proof.value;
+
+    hints.classList.add("hidden");
+    loading_indicator.classList.remove("hidden");
+    no_proof_selected.classList.add("hidden");
+    refresh_hints_button.removeAttribute("disabled");
+
+    let responses;
+    try {
+        responses = await Promise.all([
+            // TODO get all hints
+            fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
+        ]);
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to load hints, check console for details.`);
+        return;
+    }
+
+    if (!responses.every((response) => response.ok)) {
+        const error = await responses.find((response) => !response.ok).json();
+        alert(`Failed to load hints: ${error.detail}`);
+        return;
+    }
+
+    // TODO: setup hints
+    hints.classList.remove("hidden");
+    loading_indicator.classList.add("hidden");
 }
 
-// NiceSelect.bind(document.querySelector("#sel-proof"), {
-//     searchable: true,
-//     placeholder: "select",
-//     searchtext: "zoek",
-//     selectedtext: "geselecteerd",
-// });
+document.addEventListener("DOMContentLoaded", function () {
+    NiceSelect.bind(document.querySelector("select"), {
+        searchable: true,
+        searchtext: "Search",
+    });
+});
 
 //---------------------------------------------------------------------------------------------------------
 // Delete File/Folder Modal
