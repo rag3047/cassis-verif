@@ -59,7 +59,7 @@
     background-color: var(--bg-dark);
     border: none;
     border-top: 2px solid var(--border-color);
-    font-family: "Courier New", Courier, monospace;
+    font-family: var(--code-font);
     /* TODO: fix shadow (only top) */
     box-shadow: inset 0px 0px 10px 0px black;
 }
@@ -80,90 +80,7 @@
 }
 
 .list-item span {
-    font-family: "Courier New", Courier, monospace;
-}
-
-.table {
-    margin: auto;
-    padding: 0;
-    width: 80%;
-}
-
-.table-item {
-    border-bottom: 2px solid var(--border-color);
-    border-left: 2px solid var(--border-color);
-    border-right: 2px solid var(--border-color);
-    display: flex;
-    justify-content: space-around;
-    align-items: stretch;
-    text-align: center;
-
-    & > * {
-        margin: 0;
-        padding: 0.5rem;
-        border-right: 2px solid var(--border-color);
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-around;
-        gap: 0.5rem;
-    }
-
-    & > a {
-        color: white;
-        text-decoration: none;
-    }
-
-    & > a:hover {
-        text-decoration: underline;
-    }
-
-    & > *:last-child {
-        border-right: none;
-    }
-}
-
-.table-item:nth-child(odd) {
-    background-color: var(--bg-dark);
-}
-
-.table-item:nth-child(even) {
-    background-color: var(--bg-light);
-}
-
-.table-item:first-child {
-    padding: 0;
-    background-color: var(--bg-dark);
-    border-top: 2px solid var(--border-color);
-
-    & h4 {
-        margin: 0;
-        text-align: center;
-        padding: 0.5rem;
-        border-right: 2px solid var(--border-color);
-    }
-
-    & h4:last-child {
-        border-right: none;
-    }
-}
-
-.table-item-empty {
-    padding: 1rem 1.5rem 1rem 1.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--bg-dark);
-    border: 2px solid var(--border-color);
-    border-top: none;
-}
-
-.width-25 {
-    width: 25%;
-}
-
-.width-50 {
-    width: 50%;
+    font-family: var(--code-font);
 }
 
 .center-block {

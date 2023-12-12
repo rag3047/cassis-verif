@@ -24,13 +24,20 @@ FROM ubuntu:22.04
 LABEL maintainer="Raphael Gerber <raphael.gerber@students.unibe.ch>"
 
 EXPOSE 80
+
 ENV TZ=Europe/Zurich
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
+ENV WORKDIR=/cassis-verif
 
-WORKDIR /cassis-verif
+WORKDIR $WORKDIR
+
+ENV DATA_DIR=$WORKDIR/data
+ENV CBMC_ROOT=$DATA_DIR/cbmc
+ENV PROOF_ROOT=$CBMC_ROOT/proofs
+ENV DOXYGEN_DIR=$WORKDIR/doxygen
 
 RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-jinja2 universal-ctags bash-completion \

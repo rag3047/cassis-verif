@@ -340,28 +340,58 @@ async function refresh_hints(hard_refresh = false) {
         responses = await Promise.all([
             // TODO get all hints
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
-        ]);
+        ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
         alert(`Failed to load hints, check console for details.`);
         return;
     }
 
-    if (!responses.every((response) => response.ok)) {
-        const error = await responses.find((response) => !response.ok).json();
-        alert(`Failed to load hints: ${error.detail}`);
+    const [loops] = responses;
+
+    // TODO: setup hints
+    await refresh_loop_unwinding(loops);
+
+    hints.classList.remove("hidden");
+    loading_indicator.classList.add("hidden");
+}
+
+const loop_table = hints_container.querySelector(".loop-unwinding > .table");
+
+async function refresh_loop_unwinding(loops) {
+    let html = `
+        <li class="table-item">
+            <h4 class="width-50">Name</h4>
+            <h4 class="width-50">File/Line</h4>
+        </li>\n`;
+
+    if (loops.error) {
+        html += `
+            <li class="table-item-empty danger">
+                <h4>Filed to load table</h4>
+                <p>Error: ${loops.detail}</p>
+            </li>\n`;
+
+        loop_table.innerHTML = html;
         return;
     }
 
-    // TODO: setup hints
-    hints.classList.remove("hidden");
-    loading_indicator.classList.add("hidden");
+    for (const loop of loops) {
+        html += `
+            <li class="table-item">
+                <div class="width-50">${loop.name}</div>
+                <div class="width-50">${loop.file}:${loop.line}</div>
+            </li>\n`;
+    }
+
+    loop_table.innerHTML = html;
 }
 
 document.addEventListener("DOMContentLoaded", function () {
     NiceSelect.bind(document.querySelector("select"), {
         searchable: true,
         searchtext: "Search",
+        placeholder: "Select a proof",
     });
 });
 

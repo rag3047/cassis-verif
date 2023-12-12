@@ -26,7 +26,9 @@
             <!-- TODO: Use SplitJS -->
             <aside id="dir-tree">
                 <!-- TODO: 2 Tabs (Files & Git) -->
-                <div class="lds-dual-ring"></div>
+                <div class="loading">
+                    <div class="lds-dual-ring"></div>
+                </div>
             </aside>
             <div class="editor-container">
                 <div class="toolbar">
@@ -46,34 +48,41 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div>
-                    <!-- TODO: center this -->
                     <div class="loading hidden">
                         <div class="lds-dual-ring"></div>
                     </div>
                     <div class="hints {{ 'hidden' if selected_proof is none }}">
-                        <p>AI Description goes here</p>
-                        <div>Doxygen graphs go here</div>
-                        <div>Global Function State goes here</div>
-                        <div>
-                            <h3>Loop Unwinding</h3>
+                        <div class="hint-section ai"><h2>AI Description goes here</h2></div>
+                        <div class="hint-section doxygen"><h2>Doxygen graphs go here</h2></div>
+                        <div class="hint-section state"><h2>Global Function State goes here</h2></div>
+                        <div class="hint-section loop-unwinding">
+                            <h2>Loop Unwinding</h2>
                             <p>
                                 The following Loops were detected in the execution trace of the selected proof.
-                                A corresponding UNWINDSET entry should be added to the proof makefile.
+                                A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
+                                <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html">
+                                    See CBMC Tutorial for more Info
+                                </a>
                             </p>
-                            <ul>
-                                {% for loop in loops %}
-                                <li>
-                                    TODO
+                            <ul class="table">
+                                <li class="table-item">
+                                    <h4 class="width-50">Name</h4>
+                                    <h4 class="width-50">File/Line</h4>
                                 </li>
-                                {% endfor %}
+                                {% if loops | length > 0 %} {% for _loop in loops %}
+                                <li class="table-item">
+                                    <div class="width-50">{{ _loop.name }}</div>
+                                    <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
+                                </li>
+                                {% endfor %} {% else %}
+                                <li class="table-item-empty"><h4>There are no loops in the selected proof...</h4></li>
+                                {% endif %}
                             </ul>
                         </div>
                     </div>
                     <div>
                         <h3 class="no-proof-selected {{ 'hidden' if selected_proof is not none }}">Please select a proof to display hints</h3>
                     </div>
-                </div>
             </div>
         </div>
 

@@ -1,12 +1,6 @@
 #! /bin/bash
 set -e
 
-export DATA_DIR="$PWD/data"
-export CBMC_ROOT="$DATA_DIR/cbmc"
-export PROOF_ROOT="$CBMC_ROOT/proofs"
-export SRC_DIR="$DATA_DIR/src"
-export DOXYGEN_DIR="$PWD/doxygen/html"
-
 if [[ ! -d "$DATA_DIR/.git" ]]; then
     echo "Entrypoint: Initializing empty git repository"
     git init -q $DATA_DIR
@@ -25,7 +19,10 @@ if [[ ! -d $CBMC_ROOT ]]; then
     cd ../..
 fi
 
+echo "Entrypoint: $DATA_DIR"
+
 # DEV: extract C sources
+SRC_DIR="$DATA_DIR/src"
 if [[ -d $SRC_DIR ]]; then
     echo "Entrypoint: Extracting C sources"
     rm -rf $SRC_DIR
