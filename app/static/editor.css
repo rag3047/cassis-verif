@@ -177,6 +177,10 @@
     }
 }
 
+.hint-section:last-child {
+    border-bottom: none;
+}
+
 .table-item > div {
     font-family: var(--code-font);
     display: block;
@@ -196,5 +200,24 @@
 
     & > p {
         margin: 0;
+    }
+}
+
+.callgraphs {
+    & > a {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    & > h4 {
+        margin-bottom: 0.5rem;
+    }
+
+    & img {
+        margin-bottom: 1rem;
+        display: block;
+        max-width: 100%;
+        border: 2px solid var(--border-color);
     }
 }

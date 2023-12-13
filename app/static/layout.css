@@ -304,6 +304,10 @@ body {
     width: auto;
 }
 
+.margin-0 {
+    margin: 0 !important;
+}
+
 .pagination {
     display: flex;
     justify-content: center;

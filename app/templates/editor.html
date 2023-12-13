@@ -44,7 +44,12 @@
                     <button id="btn-refresh-hints" class="button" {{ 'disabled' if selected_proof is none }} onclick="refresh_hints(true)">Refresh</button>
                     <select id="sel-proof" class="sel-proof" onchange="refresh_hints()">
                         {% for proof in proofs %}
-                            <option value="{{ proof.name }}" data-harness="{{ proof.harness }}" {{ 'selected' if proof.name == selected_proof.name }}>{{ proof.name }}</option>
+                            <option 
+                                value="{{ proof.name }}"
+                                data-src="{{ proof.src }}"
+                                data-harness="{{ proof.harness }}"
+                                {{ 'selected' if proof.name == selected_proof.name }}
+                            >{{ proof.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -53,8 +58,30 @@
                     </div>
                     <div class="hints {{ 'hidden' if selected_proof is none }}">
                         <div class="hint-section ai"><h2>AI Description goes here</h2></div>
-                        <div class="hint-section doxygen"><h2>Doxygen graphs go here</h2></div>
-                        <div class="hint-section state"><h2>Global Function State goes here</h2></div>
+                        <div class="hint-section doxygen">
+                            <h2>Callgraphs</h2>
+                            <p>
+                                TODO Description<br/>
+                                <!-- TODO: select correct file -->
+                                <a target="_blank" rel="noreferrer" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.file_href) }}">
+                                    See Doxygen for more Info
+                                </a>
+                            </p>
+                            <div class="callgraphs {{ 'hidden' if not callgraphs.callee or not callgraphs.caller }}">
+                                <h4>Callee Graph</h4>
+                                <a class="callee-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.callee) }}">
+                                    <img class="callee" src="{{ url_for('get_doxygen_docs', file_path=callgraphs.callee) }}" alt="Calleegraph" />
+                                </a>
+                                <h4>Caller Graph</h4>
+                                <a class="caller-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.caller) }}">
+                                    <img class="caller" src="{{ url_for('get_doxygen_docs', file_path=callgraphs.caller) }}" alt="Callergraph" />
+                                </a>
+                            </div>
+                            <div class="callgraph-error {{ 'hidden' if callgraphs.callee and callgraphs.caller }}">
+                                <h4 class="alert danger margin-0">Callgraphs currently unavailable...</h4>
+                            </div>
+                        </div>
+                        <div class="hint-section context"><h2>Function Context goes here</h2></div>
                         <div class="hint-section loop-unwinding">
                             <h2>Loop Unwinding</h2>
                             <p>
@@ -72,6 +99,7 @@
                                 {% if loops | length > 0 %} {% for _loop in loops %}
                                 <li class="table-item">
                                     <div class="width-50">{{ _loop.name }}</div>
+                                    <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
                                     <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
                                 </li>
                                 {% endfor %} {% else %}

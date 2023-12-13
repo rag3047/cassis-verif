@@ -1,12 +1,14 @@
 import xml.etree.ElementTree as ET
 
 from os import getenv
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+from fastapi import APIRouter, HTTPException, status, Query
 from fastapi.responses import FileResponse
 from logging import getLogger
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE
 from pathlib import Path
 from asyncio import Task, create_task
+from pydantic import BaseModel
 
 from ..utils.errors import HTTPError
 
@@ -81,6 +83,12 @@ async def get_doxygen_docs(file_path: str) -> FileResponse:
     return FileResponse(abs_path)
 
 
+class DoxygenCallgraphs(BaseModel):
+    file_href: Path
+    callee: Path
+    caller: Path
+
+
 @router.get(
     "/callgraphs",
     responses={
@@ -89,9 +97,9 @@ async def get_doxygen_docs(file_path: str) -> FileResponse:
     },
 )
 async def get_doxygen_callgraph_image_paths(
-    file_name: str,
-    func_name: str,
-) -> tuple[str, str]:
+    file_name: Annotated[str, Query(..., alias="file-name")],
+    func_name: Annotated[str, Query(..., alias="func-name")],
+) -> DoxygenCallgraphs:
     """Return the paths to the doxygen callgraph images."""
     global DOXYGEN_BUILD_TASK
     log.info("Get doxygen callgraph image paths")
@@ -102,22 +110,41 @@ async def get_doxygen_callgraph_image_paths(
             "Doxygen build task running",
         )
 
-    _, func_ref = _parse_doxygen_index(file_name, func_name)
+    # TODO: file_name might be url encoded...
 
-    # TODO: bugfix: excess "1" in func_ref
-    callee_graph = Path(DOXYGEN_DIR) / "html" / f"{func_ref}_cgraph.svg"
-    caller_graph = Path(DOXYGEN_DIR) / "html" / f"{func_ref}_icgraph.svg"
+    file_ref, func_ref = _parse_doxygen_index(file_name, func_name)
 
+    # this is a weird hack to get the file path from the function refid and
+    # might not work in all cases?
+    [*path, refid] = func_ref.split("_")
+    func_ref = "_".join(path + [refid[1:]])
+
+    file_href = f"{file_ref}.html#{refid[1:]}"
+    callee_graph = f"{func_ref}_cgraph.svg"
+    # TODO: handle org files correctly
+    caller_graph = f"{func_ref}_icgraph_org.svg"
+
+    log.debug(f"{file_href=}")
     log.debug(f"{callee_graph=}")
     log.debug(f"{caller_graph=}")
 
-    if not callee_graph.exists() or not caller_graph.exists():
+    html_dir = Path(DOXYGEN_DIR) / "html"
+
+    try:
+        assert Path(html_dir, callee_graph).exists()
+        assert Path(html_dir, caller_graph).exists()
+
+    except AssertionError:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             "Callgraph images not found. Try rebuilding the doxygen documentation.",
         )
 
-    return callee_graph, caller_graph
+    return DoxygenCallgraphs(
+        file_href=Path(file_href),
+        callee=Path(callee_graph),
+        caller=Path(caller_graph),
+    )
 
 
 # ------------------------------------------------------------

@@ -37,7 +37,7 @@
                             <span>{{ proof.src | default('N/A', true) }}</span>
                         </div>
                         <div>
-                            <a class="button" href="{{ url_for('editor') }}?proof_name={{ proof.name }}">Edit</a>
+                            <a class="button" href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}">Edit</a>
                             <button class="btn-delete-proof button danger" data-name="{{ proof.name }}" onclick="show_confirm_delete_proof_modal(event)">
                                 Delete
                             </button>

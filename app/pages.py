@@ -1,12 +1,12 @@
-import re
-
 from os import getenv
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
+from contextlib import suppress
 
+from .controllers.doxygen import get_doxygen_callgraph_image_paths
 from .controllers.cbmc import (
     get_cbmc_proof,
     get_cbmc_proofs,
@@ -77,23 +77,38 @@ async def doxygen(request: Request) -> HTMLResponse:
 async def editor(request: Request) -> HTMLResponse:
     log.info("Rendering editor page")
 
-    proof_name = request.query_params.get("proof_name", None)
+    file_name = request.query_params.get("file-name", None)
+    proof_name = request.query_params.get("proof-name", None)
     log.debug(f"{proof_name=}")
 
     selected_proof = None
     loops = []
+    callgraphs = None
 
     if proof_name:
-        selected_proof = await get_cbmc_proof(proof_name)
-        loops = await get_cbmc_proof_loop_info(proof_name)
+        with suppress(HTTPException):
+            selected_proof = await get_cbmc_proof(proof_name)
+
+        with suppress(HTTPException):
+            loops = await get_cbmc_proof_loop_info(proof_name)
+
+    if proof_name and file_name and file_name != "None":
+        with suppress(HTTPException):
+            callgraphs = await get_doxygen_callgraph_image_paths(
+                file_name.split("/")[-1],
+                proof_name,
+            )
 
     log.debug(f"{selected_proof=}")
+    log.debug(f"{loops=}")
+    log.debug(f"{callgraphs=}")
 
     context = {
         "request": request,
         "selected_proof": selected_proof,
         "proofs": await get_cbmc_proofs(),
         "loops": loops,
+        "callgraphs": callgraphs,
     }
 
     return templates.TemplateResponse("editor.html", context)

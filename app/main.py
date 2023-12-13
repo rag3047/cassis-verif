@@ -56,6 +56,8 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    log.warn(f"HTTPException: {exc.status_code} - {exc.detail}")
+
     error_model = HTTPError(
         error_code=exc.status_code,
         detail=exc.detail,

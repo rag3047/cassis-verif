@@ -329,6 +329,7 @@ const sel_proof = hints_container.querySelector("#sel-proof");
 
 async function refresh_hints(hard_refresh = false) {
     const proof_name = sel_proof.value;
+    const file_name = sel_proof.querySelector(`option[value="${proof_name}"]`).dataset.src;
 
     hints.classList.add("hidden");
     loading_indicator.classList.remove("hidden");
@@ -340,6 +341,9 @@ async function refresh_hints(hard_refresh = false) {
         responses = await Promise.all([
             // TODO get all hints
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
+            fetch(
+                `api/v1/doxygen/callgraphs?file-name=${encodeURI(file_name.split("/").pop())}&func-name=${proof_name}`
+            ),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
@@ -347,13 +351,39 @@ async function refresh_hints(hard_refresh = false) {
         return;
     }
 
-    const [loops] = responses;
+    const [loops, graphs] = responses;
 
     // TODO: setup hints
     await refresh_loop_unwinding(loops);
+    await refres_callgraphs(graphs);
 
     hints.classList.remove("hidden");
     loading_indicator.classList.add("hidden");
+}
+
+const callgraphs = hints_container.querySelector(".callgraphs");
+const callgraph_error = hints_container.querySelector(".callgraph-error");
+const callee_graph = callgraphs.querySelector(".callee");
+const callee_link = callgraphs.querySelector(".callee-link");
+const caller_graph = callgraphs.querySelector(".caller");
+const caller_link = callgraphs.querySelector(".caller-link");
+
+async function refres_callgraphs(graphs) {
+    if (graphs.error_code) {
+        callgraphs.classList.add("hidden");
+        callgraph_error.classList.remove("hidden");
+        // callgraph_error.textContent = graphs.detail;
+        return;
+    } else {
+        callgraphs.classList.remove("hidden");
+        callgraph_error.classList.add("hidden");
+    }
+
+    const prefix = "api/v1/doxygen/docs/";
+    callee_link.href = prefix + graphs.callee;
+    callee_graph.src = prefix + graphs.callee;
+    caller_link.href = prefix + graphs.caller;
+    caller_graph.src = prefix + graphs.caller;
 }
 
 const loop_table = hints_container.querySelector(".loop-unwinding > .table");
@@ -365,7 +395,7 @@ async function refresh_loop_unwinding(loops) {
             <h4 class="width-50">File/Line</h4>
         </li>\n`;
 
-    if (loops.error) {
+    if (loops.error_code) {
         html += `
             <li class="table-item-empty danger">
                 <h4>Filed to load table</h4>
