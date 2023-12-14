@@ -2,10 +2,11 @@
 // Globals
 //---------------------------------------------------------------------------------------------------------
 
-let has_unsaved_changes = false;
+// stores the URIs of all unsaved files
+let unsaved_changes = new Set();
 
 window.addEventListener("beforeunload", (event) => {
-    if (has_unsaved_changes) {
+    if (unsaved_changes.size > 0) {
         event.preventDefault();
         event.returnValue = true;
     }
@@ -15,7 +16,8 @@ window.addEventListener("beforeunload", (event) => {
 // Monaco Editor
 //---------------------------------------------------------------------------------------------------------
 
-let editor;
+let editor = null;
+let selected_file = null;
 
 require.config({ paths: { vs: "static/monaco-editor/min/vs" } });
 require(["vs/editor/editor.main"], async function () {
@@ -26,22 +28,27 @@ require(["vs/editor/editor.main"], async function () {
         automaticLayout: true,
     });
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, function (event) {
-        // TODO: fix this
-        console.log(event);
-        console.log("save");
+    editor.onKeyDown(async (event) => {
+        if (event.ctrlKey && event.code == "KeyS") {
+            event.preventDefault();
+            await save_file();
+        }
     });
 
     editor.onDidChangeModelContent(function (event) {
-        has_unsaved_changes ||= true;
+        unsaved_changes.add(editor.getModel().uri);
     });
+
+    if (selected_file) {
+        await on_file_selected(selected_file);
+    }
 });
 
 async function on_file_selected(path) {
-    const url = "api/v1/files/" + path;
+    const url = "api/v1/files/" + encodeURIComponent(path);
 
-    const code = await fetch(url).then((response) => response.text());
     let model = monaco.editor.getModel(url);
+    const code = await fetch(url).then((response) => response.text());
 
     if (!model) {
         const ext = "." + path.split(".").pop();
@@ -56,9 +63,10 @@ async function on_file_selected(path) {
 async function save_file() {
     const model = editor.getModel();
 
-    if (model.uri.toString().startsWith("inmemory://")) {
-        return;
-    }
+    // cannot save inmemory files (e.g. no file selected)
+    if (model.uri.toString().startsWith("inmemory://")) return;
+    // nothing to save
+    if (!unsaved_changes.has(model.uri)) return;
 
     const response = await fetch(model.uri, {
         method: "PUT",
@@ -73,7 +81,7 @@ async function save_file() {
         setTimeout(() => {
             notification.classList.remove("show-success");
         }, 3000);
-        has_unsaved_changes = false;
+        unsaved_changes.delete(model.uri);
     } else {
         notification.textContent = "Error";
         notification.classList.add("show-error");
@@ -147,12 +155,12 @@ function show_contextmenu(menu) {
 
 // Note: we use the hidden select (replaced by nice-select2) to retrieve the harness file name
 const harness_file = document.querySelector("#sel-proof option[selected]")?.getAttribute("data-harness");
-let selected_path = null;
 let tree_view = null;
 
 async function build_directory_tree() {
     const root = new TreeNode("root");
     const entries = await fetch("api/v1/files").then((res) => res.json());
+    let selected_path = null;
 
     for (const entry of entries) {
         const parts = entry.path.split("/");
@@ -182,12 +190,26 @@ async function build_directory_tree() {
 
         if (entry.type == "file" && name == harness_file) {
             selected_path = new TreePath(root, node);
-            // TODO: ensure monaco editor is loaded (not always the case, seems to be an issue only when hard-relading the page)
-            await on_file_selected(entry.path);
+
+            // Load selected file: sometimes the editor is not yet loeaded (e.g. when using a
+            // hard reload). In this case we store the selected file path and load it once the
+            // editor is ready.
+            if (editor != null) {
+                await on_file_selected(entry.path);
+            } else {
+                selected_file = entry.path;
+            }
         }
     }
 
-    return new TreeView(root, "#dir-tree", { show_root: false });
+    const view = new TreeView(root, "#dir-tree", { show_root: false });
+
+    if (selected_path) {
+        view.expandPath(selected_path);
+        view.reload();
+    }
+
+    return view;
 }
 
 const contextmenu_file = document.querySelector("#contextmenu-file");
@@ -305,13 +327,9 @@ async function add_tree_path(path, type) {
     tree_view.reload();
 }
 
+// Build directory tree on page load
 document.addEventListener("DOMContentLoaded", async () => {
     tree_view = await build_directory_tree();
-
-    if (selected_path) {
-        tree_view.expandPath(selected_path);
-        tree_view.reload();
-    }
 });
 
 // TODO: create top level file/folder
@@ -342,7 +360,9 @@ async function refresh_hints(hard_refresh = false) {
             // TODO get all hints
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
             fetch(
-                `api/v1/doxygen/callgraphs?file-name=${encodeURI(file_name.split("/").pop())}&func-name=${proof_name}`
+                `api/v1/doxygen/callgraphs?file-name=${encodeURIComponent(
+                    file_name.split("/").pop()
+                )}&func-name=${proof_name}`
             ),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
@@ -442,7 +462,7 @@ confirm_delete_entry_modal.addEventListener("close", async () => {
         let response;
 
         try {
-            response = await fetch(`api/v1/files/${confirm_delete_entry_modal.returnValue}`, {
+            response = await fetch(`api/v1/files/${encodeURIComponent(confirm_delete_entry_modal.returnValue)}`, {
                 method: "DELETE",
             });
         } catch (err) {

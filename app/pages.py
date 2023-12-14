@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
-from contextlib import suppress
 
 from .controllers.doxygen import get_doxygen_callgraph_image_paths
 from .controllers.cbmc import (
@@ -79,6 +78,7 @@ async def editor(request: Request) -> HTMLResponse:
 
     file_name = request.query_params.get("file-name", None)
     proof_name = request.query_params.get("proof-name", None)
+    log.debug(f"{file_name=}")
     log.debug(f"{proof_name=}")
 
     selected_proof = None
@@ -86,18 +86,24 @@ async def editor(request: Request) -> HTMLResponse:
     callgraphs = None
 
     if proof_name:
-        with suppress(HTTPException):
+        try:
             selected_proof = await get_cbmc_proof(proof_name)
+        except HTTPException as e:
+            log.warn(f"Exception ignored: {e}")
 
-        with suppress(HTTPException):
+        try:
             loops = await get_cbmc_proof_loop_info(proof_name)
+        except HTTPException as e:
+            log.warn(f"Exception ignored: {e}")
 
     if proof_name and file_name and file_name != "None":
-        with suppress(HTTPException):
+        try:
             callgraphs = await get_doxygen_callgraph_image_paths(
                 file_name.split("/")[-1],
                 proof_name,
             )
+        except HTTPException as e:
+            log.warn(f"Exception ignored: {e}")
 
     log.debug(f"{selected_proof=}")
     log.debug(f"{loops=}")

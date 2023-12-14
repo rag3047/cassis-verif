@@ -221,3 +221,46 @@
         border: 2px solid var(--border-color);
     }
 }
+
+.tab-list {
+    background-color: var(--bg-dark);
+    /* padding: 0.5rem; */
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.tab {
+    color: white;
+    font-size: 1rem;
+
+    /* font-family: var(--font);
+    font-size: 1rem;
+    color: white;
+    background-color: var(--bg-dark);
+    border: none;
+    border-right: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    outline: none;
+    padding: 0.5rem 1rem 0.5rem 1rem; */
+
+    & .close {
+        font-family: var(--font);
+        font-size: 1rem;
+        color: white;
+        background-color: inherit;
+        border: none;
+        border-radius: 2px;
+        outline: none;
+    }
+}
+
+.tab:hover {
+    background-color: var(--bg-light);
+}
+
+.tab.active {
+    background-color: var(--bg-light);
+    border-bottom: none;
+}

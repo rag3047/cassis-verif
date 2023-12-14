@@ -4,7 +4,7 @@
 
 const confirm_delete_proof_modal = document.querySelector("#modal-confirm-delete-proof");
 
-async function delete_entry() {
+async function delete_proof() {
     const nameEl = confirm_delete_proof_modal.querySelector("#proof-name");
     // close modal: indicate which proof should be deleted
     confirm_delete_proof_modal.close(nameEl.dataset.name);

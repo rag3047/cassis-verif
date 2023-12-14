@@ -24,6 +24,7 @@ DOXYGEN_INIT_TASK: Task | None = None
 
 @router.post(
     "/build",
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def build_doxygen_doc():
@@ -57,6 +58,7 @@ async def build_doxygen_doc():
 
 
 @router.get(
+    # Note: this path allows for directory browsing using relative paths (i.e. navigate doxygen)
     "/docs/{file_path:path}",
     responses={
         status.HTTP_404_NOT_FOUND: {"model": HTTPError},
@@ -110,8 +112,6 @@ async def get_doxygen_callgraph_image_paths(
             "Doxygen build task running",
         )
 
-    # TODO: file_name might be url encoded...
-
     file_ref, func_ref = _parse_doxygen_index(file_name, func_name)
 
     # this is a weird hack to get the file path from the function refid and
@@ -119,31 +119,34 @@ async def get_doxygen_callgraph_image_paths(
     [*path, refid] = func_ref.split("_")
     func_ref = "_".join(path + [refid[1:]])
 
-    file_href = f"{file_ref}.html#{refid[1:]}"
-    callee_graph = f"{func_ref}_cgraph.svg"
-    # TODO: handle org files correctly
-    caller_graph = f"{func_ref}_icgraph_org.svg"
-
-    log.debug(f"{file_href=}")
-    log.debug(f"{callee_graph=}")
-    log.debug(f"{caller_graph=}")
-
     html_dir = Path(DOXYGEN_DIR) / "html"
 
-    try:
-        assert Path(html_dir, callee_graph).exists()
-        assert Path(html_dir, caller_graph).exists()
+    file_href = Path(f"{file_ref}.html#{refid[1:]}")
+    callee_graph = html_dir / f"{func_ref}_cgraph_org.svg"
+    caller_graph = html_dir / f"{func_ref}_icgraph_org.svg"
 
-    except AssertionError:
+    # "_org" files for callgraphs are only generated if the callgraph is large.
+    # If they don't exist, use the normal files.
+    if not callee_graph.exists():
+        callee_graph = html_dir / f"{func_ref}_cgraph.svg"
+
+    if not caller_graph.exists():
+        caller_graph = html_dir / f"{func_ref}_icgraph.svg"
+
+    log.debug(f"{file_href=!s}")
+    log.debug(f"{callee_graph=!s}")
+    log.debug(f"{caller_graph=!s}")
+
+    if not callee_graph.exists() or not caller_graph.exists():
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             "Callgraph images not found. Try rebuilding the doxygen documentation.",
         )
 
     return DoxygenCallgraphs(
-        file_href=Path(file_href),
-        callee=Path(callee_graph),
-        caller=Path(caller_graph),
+        file_href=file_href,
+        callee=callee_graph.relative_to(html_dir),
+        caller=caller_graph.relative_to(html_dir),
     )
 
 

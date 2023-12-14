@@ -396,6 +396,7 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
 
 
 @router.get(
+    # Note: this path allows for directory browsing using relative paths (i.e. navigate the dashboard)
     "/results/{version}/{file_path:path}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
