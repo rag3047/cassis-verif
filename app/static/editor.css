@@ -55,7 +55,7 @@
 }
 
 #editor {
-    height: 100%;
+    flex-grow: 1;
 }
 
 .hints-container {
@@ -74,6 +74,7 @@
     text-align: center;
 }
 
+/* TODO: adjust position: top of editor */
 .notification {
     display: none;
     color: white;
@@ -224,43 +225,58 @@
 
 .tab-list {
     background-color: var(--bg-dark);
-    /* padding: 0.5rem; */
-    border-bottom: 2px solid var(--border-color);
     display: flex;
-    gap: 0.5rem;
     align-items: center;
+    overflow: auto hidden;
+}
+
+.tab-list::-webkit-scrollbar {
+    display: none;
 }
 
 .tab {
     color: white;
     font-size: 1rem;
-
-    /* font-family: var(--font);
-    font-size: 1rem;
-    color: white;
-    background-color: var(--bg-dark);
-    border: none;
     border-right: 2px solid var(--border-color);
     border-bottom: 2px solid var(--border-color);
-    outline: none;
-    padding: 0.5rem 1rem 0.5rem 1rem; */
+    padding: 0.5rem 1rem 0.5rem 1rem;
+    flex-shrink: 0;
+
+    & span {
+        pointer-events: none;
+    }
 
     & .close {
         font-family: var(--font);
-        font-size: 1rem;
+        font-size: 0.75rem;
         color: white;
         background-color: inherit;
         border: none;
         border-radius: 2px;
         outline: none;
+        padding: 0.25rem;
+        margin-left: 0.25rem;
     }
+
+    & .close:hover {
+        background-color: gray;
+        cursor: pointer;
+    }
+}
+
+.tab-fill {
+    border-bottom: 2px solid var(--border-color);
+    height: calc(100% - 2px);
+    flex-grow: 1;
 }
 
 .tab:hover {
     background-color: var(--bg-light);
+    cursor: pointer;
 }
 
 .tab.active {
     background-color: var(--bg-light);
-    border-bottom: none;
+    border-bottom: 2px solid var(--bg-light);
+    /* border-top: 2px solid gray; */
 }

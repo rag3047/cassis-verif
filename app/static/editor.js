@@ -36,7 +36,7 @@ require(["vs/editor/editor.main"], async function () {
     });
 
     editor.onDidChangeModelContent(function (event) {
-        unsaved_changes.add(editor.getModel().uri);
+        unsaved_changes.add(editor.getModel().uri.toString());
     });
 
     if (selected_file) {
@@ -45,16 +45,21 @@ require(["vs/editor/editor.main"], async function () {
 });
 
 async function on_file_selected(path) {
-    const url = "api/v1/files/" + encodeURIComponent(path);
+    const uri = "api/v1/files/" + encodeURIComponent(path);
 
-    let model = monaco.editor.getModel(url);
-    const code = await fetch(url).then((response) => response.text());
+    let model = monaco.editor.getModel(uri);
+    const code = await fetch(uri).then((response) => response.text());
 
     if (!model) {
         const ext = "." + path.split(".").pop();
         const language =
             monaco.languages.getLanguages().find((lang) => lang.extensions?.includes(ext))?.id ?? "plaintext";
-        model = monaco.editor.createModel(code, language, url);
+        model = monaco.editor.createModel(code, language, uri);
+        // add new Tab
+        add_editor_tab(path.split("/").pop(), uri);
+    } else {
+        // select existing tab
+        select_editor_tab_by_uri(uri);
     }
 
     editor.setModel(model);
@@ -66,7 +71,7 @@ async function save_file() {
     // cannot save inmemory files (e.g. no file selected)
     if (model.uri.toString().startsWith("inmemory://")) return;
     // nothing to save
-    if (!unsaved_changes.has(model.uri)) return;
+    if (!unsaved_changes.has(model.uri.toString())) return;
 
     const response = await fetch(model.uri, {
         method: "PUT",
@@ -81,7 +86,7 @@ async function save_file() {
         setTimeout(() => {
             notification.classList.remove("show-success");
         }, 3000);
-        unsaved_changes.delete(model.uri);
+        unsaved_changes.delete(model.uri.toString());
     } else {
         notification.textContent = "Error";
         notification.classList.add("show-error");
@@ -102,6 +107,54 @@ async function toggle_editor() {
         editor_container.classList.add("hidden");
         toggle_editor_button.textContent = "Show Editor";
     }
+}
+
+const tab_list = editor_container.querySelector(".tab-list");
+
+function add_editor_tab(name, uri) {
+    const current_tab = tab_list.querySelector(".tab.active");
+
+    if (current_tab) {
+        current_tab.classList.remove("active");
+    }
+
+    tab_list.innerHTML =
+        `<div class="tab active" data-uri="${uri}" onclick="on_editor_tab_clicked(event)">
+            <span>${name}</span>
+            <button class="close" onclick="close_editor_tab(event)">X</button>
+        </div>\n` + tab_list.innerHTML;
+}
+
+function select_editor_tab_by_uri(uri) {
+    const current_tab = tab_list.querySelector(".tab.active");
+
+    if (current_tab) {
+        current_tab.classList.remove("active");
+    }
+
+    const selected_tab = tab_list.querySelector(`.tab[data-uri="${uri}"]`);
+    selected_tab.classList.add("active");
+}
+
+function close_editor_tab(event) {
+    event.stopPropagation();
+    const tab = event.target.parentElement;
+    const uri = tab.dataset.uri;
+
+    unsaved_changes.delete(uri);
+
+    const model = monaco.editor.getModel(uri);
+    model.dispose();
+
+    tab.remove();
+}
+
+async function on_editor_tab_clicked(event) {
+    const uri = event.target.dataset.uri;
+    const model = monaco.editor.getModel(uri);
+    editor.setModel(model);
+    select_editor_tab_by_uri(uri);
+    // TODO: update dir-tree selection
 }
 
 //---------------------------------------------------------------------------------------------------------
