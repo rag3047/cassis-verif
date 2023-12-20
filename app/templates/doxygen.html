@@ -3,18 +3,27 @@
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>Results</title>
+        <title>Doxygen | Cassis-Verif</title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="" />
+        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='doxygen.css') }}" />
     </head>
     <body>
-        <a href="{{ url_for('home') }}">Home</a>
-        <iframe
-            src="{{ url_for('get_doxygen_docs', file_path='index.html') }}"
-            width="100%"
-            style="height: 95vh"
-        ></iframe>
-        <script src="" async defer></script>
+        <header class="header">
+            <h1>Cassis-Verif</h1>
+            <nav>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('editor') }}">Editor</a>
+                <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
+            </nav>
+        </header>
+        <main class="content">
+            {% if doxygen_available %}
+            <iframe id="doxygen-frame" src="{{ url_for('get_doxygen_docs', file_path='index.html') }}"></iframe>
+            {% else %}
+            <h2 class="unavailable">Doxygen currentily unavailable. Try reloading the page.</h2>
+            {% endif %}
+        </main>
     </body>
 </html>

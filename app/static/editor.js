@@ -46,17 +46,16 @@ require(["vs/editor/editor.main"], async function () {
 
 async function on_file_selected(path) {
     const uri = "api/v1/files/" + encodeURIComponent(path);
-
     let model = monaco.editor.getModel(uri);
-    const code = await fetch(uri).then((response) => response.text());
 
     if (!model) {
+        const code = await fetch(uri).then((response) => response.text());
         const ext = "." + path.split(".").pop();
         const language =
             monaco.languages.getLanguages().find((lang) => lang.extensions?.includes(ext))?.id ?? "plaintext";
         model = monaco.editor.createModel(code, language, uri);
         // add new Tab
-        add_editor_tab(path.split("/").pop(), uri);
+        add_editor_tab(path, uri);
     } else {
         // select existing tab
         select_editor_tab_by_uri(uri);
@@ -64,6 +63,13 @@ async function on_file_selected(path) {
 
     editor.setModel(model);
 }
+
+const notification = document.querySelector(".notification");
+
+notification.addEventListener("click", () => {
+    notification.classList.remove("show-success");
+    notification.classList.remove("show-error");
+});
 
 async function save_file() {
     const model = editor.getModel();
@@ -77,8 +83,6 @@ async function save_file() {
         method: "PUT",
         body: model.getValue(),
     });
-
-    const notification = document.querySelector(".notification");
 
     if (response.ok) {
         notification.textContent = "Saved";
@@ -111,7 +115,7 @@ async function toggle_editor() {
 
 const tab_list = editor_container.querySelector(".tab-list");
 
-function add_editor_tab(name, uri) {
+function add_editor_tab(path, uri) {
     const current_tab = tab_list.querySelector(".tab.active");
 
     if (current_tab) {
@@ -119,8 +123,8 @@ function add_editor_tab(name, uri) {
     }
 
     tab_list.innerHTML =
-        `<div class="tab active" data-uri="${uri}" onclick="on_editor_tab_clicked(event)">
-            <span>${name}</span>
+        `<div class="tab active" data-uri="${uri}" data-path="${path}" onclick="on_editor_tab_clicked(event)">
+            <span>${path.split("/").pop()}</span>
             <button class="close" onclick="close_editor_tab(event)">X</button>
         </div>\n` + tab_list.innerHTML;
 }
@@ -146,15 +150,25 @@ function close_editor_tab(event) {
     const model = monaco.editor.getModel(uri);
     model.dispose();
 
+    if (tab.classList.contains("active")) {
+        const tab_to_select = tab.previousElementSibling ?? tab.nextElementSibling;
+
+        if (tab_to_select.classList.contains("tab")) {
+            tab_to_select.click();
+        }
+    }
+
     tab.remove();
 }
 
+// TODO: add context menu to save file
 async function on_editor_tab_clicked(event) {
     const uri = event.target.dataset.uri;
+    const path = event.target.dataset.path;
     const model = monaco.editor.getModel(uri);
     editor.setModel(model);
     select_editor_tab_by_uri(uri);
-    // TODO: update dir-tree selection
+    select_tree_node_by_path(path);
 }
 
 //---------------------------------------------------------------------------------------------------------
@@ -295,6 +309,26 @@ function remove_tree_node_by_path(path) {
 
     if (node) {
         parent.removeChild(node);
+        tree_view.reload();
+    }
+}
+
+function select_tree_node_by_path(path) {
+    let parent = tree_view.getRoot();
+    let node = null;
+
+    for (const part of path.split("/")) {
+        node = parent.getChildren().find((child) => child.toString() == part);
+
+        if (node.getUserObject().path == path) break;
+        parent = node;
+    }
+
+    if (node) {
+        const tree_path = new TreePath(tree_view.getRoot(), node);
+        tree_view.expandPath(tree_path);
+        tree_view.getSelectedNodes().forEach((node) => node.setSelected(false));
+        node.setSelected(true);
         tree_view.reload();
     }
 }

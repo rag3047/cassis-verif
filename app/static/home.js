@@ -135,19 +135,90 @@ async function show_update_git_config_modal() {
         return;
     }
 
-    if (response.error_code) {
-        update_git_config_modal_alert.textContent = `Error: ${response.detail}`;
-        update_git_config_modal_alert.classList.remove("hidden");
-        return;
-    }
-
-    git_pw_input.value = response.password;
-    git_user_input.value = response.username;
-    git_branch_input.value = response.branch;
-    git_remote_input.value = response.remote;
+    git_pw_input.value = response.password ?? "";
+    git_user_input.value = response.username ?? "";
+    git_branch_input.value = response.branch ?? "";
+    git_remote_input.value = response.remote ?? "";
 
     update_git_config_modal_alert.classList.add("hidden");
     update_git_config_modal.showModal();
+}
+
+//---------------------------------------------------------------------------------------------------------
+// Git Pull
+//---------------------------------------------------------------------------------------------------------
+
+const git_pull_button = document.querySelector("#btn-git-pull");
+const git_pull_modal = document.querySelector("#modal-git-pull");
+const git_pull_modal_status = git_pull_modal.querySelector(".status");
+const git_pull_modal_alert = git_pull_modal.querySelector(".alert");
+const git_pull_modal_spinner = git_pull_modal.querySelector(".spinner");
+
+function git_pull_modal_on_close() {
+    git_pull_button.removeAttribute("disabled");
+    git_pull_modal_alert.classList.add("hidden");
+    git_pull_modal_spinner.classList.remove("hidden");
+    git_pull_modal_status.textContent = "";
+}
+
+git_pull_modal.addEventListener("close", git_pull_modal_on_close);
+git_pull_modal.addEventListener("click", (event) => {
+    // only enable closing the modal by clicking the background if an error occured
+    if (!git_pull_modal_alert.classList.contains("hidden") && event.target == git_pull_modal) {
+        git_pull_modal.close();
+    }
+});
+
+function git_pull_modal_on_error(error) {
+    git_pull_modal_alert.textContent = `Error: ${error.detail}`;
+    git_pull_modal_status.textContent = "";
+    git_pull_modal_alert.classList.remove("hidden");
+    git_pull_modal_spinner.classList.add("hidden");
+}
+
+async function pull_sources() {
+    let response;
+    // disable button and reset modal
+    git_pull_button.setAttribute("disabled", "");
+    git_pull_modal.showModal();
+
+    git_pull_modal_status.textContent = "Pulling sources...";
+    try {
+        response = await fetch("api/v1/git/pull", {
+            method: "POST",
+        });
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to pull sources, check console for details.`);
+        git_pull_modal.close();
+        return;
+    }
+
+    if (!response.ok) {
+        const error = await response.json();
+        git_pull_modal_on_error(error);
+        return;
+    }
+
+    git_pull_modal_status.textContent = "Rebuilding doxygen docs...";
+    try {
+        response = await fetch("api/v1/doxygen/build", {
+            method: "POST",
+        });
+    } catch (err) {
+        console.error(err);
+        alert(`Failed to rebuild doxygen docs, check console for details.`);
+        git_pull_modal.close();
+        return;
+    }
+
+    if (!response.ok) {
+        const error = await response.json();
+        git_pull_modal_on_error(error);
+        return;
+    }
+
+    git_pull_modal.close();
 }
 
 //---------------------------------------------------------------------------------------------------------

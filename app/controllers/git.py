@@ -2,10 +2,9 @@ from os import getenv
 from git import Repo
 from git.exc import GitCommandError
 from pydantic import BaseModel, SecretStr, HttpUrl, Field
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, status
 from pathlib import Path
 from logging import getLogger
-from http import HTTPStatus
 
 from ..utils.errors import HTTPError
 
@@ -32,7 +31,7 @@ class GitConfig(BaseModel):
 @router.get(
     "/config",
     description="Get git config",
-    responses={404: {"model": HTTPError}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def get_git_config() -> GitConfig:
     """Return GitConfig with remote and branch."""
@@ -42,7 +41,7 @@ async def get_git_config() -> GitConfig:
 
     if len(remote) == 0:
         log.info("No git remote configured")
-        raise HTTPException(HTTPStatus.NOT_FOUND, "No git remote configured")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No git remote configured")
 
     username = None
     password = None
@@ -70,8 +69,8 @@ async def get_git_config() -> GitConfig:
     "/config",
     description="Set git config",
     responses={
-        409: {"model": HTTPError},
-        404: {"model": HTTPError},
+        status.HTTP_409_CONFLICT: {"model": HTTPError},
+        status.HTTP_404_NOT_FOUND: {"model": HTTPError},
     },
 )
 async def set_git_config(
@@ -106,14 +105,16 @@ async def set_git_config(
         remote.fetch()
 
     except GitCommandError as e:
-        raise HTTPException(HTTPStatus.CONFLICT, f"Failed to fetch remote: {e}")
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Failed to fetch remote: {e}")
 
     try:
         # check if branch exists
         remote_branch = remote.refs[config.branch]
 
     except IndexError:
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"Branch '{config.branch}' not found")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"Branch '{config.branch}' not found"
+        )
 
     repo.active_branch.set_tracking_branch(remote_branch)
 
@@ -126,9 +127,9 @@ async def set_git_config(
 
 @router.post(
     "/pull",
-    status_code=HTTPStatus.NO_CONTENT,
+    status_code=status.HTTP_204_NO_CONTENT,
     description="Pull sources from configured remote/branch",
-    responses={409: {"model": HTTPError}},
+    responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def pull_sources() -> None:
     """Pull sources from remote."""
@@ -136,7 +137,7 @@ async def pull_sources() -> None:
     log.info("Pulling remote sources")
 
     if len(repo.remotes) == 0:
-        raise HTTPException(HTTPStatus.CONFLICT, "No git remote configured")
+        raise HTTPException(status.HTTP_409_CONFLICT, "No git remote configured")
 
     remote = repo.remote("origin")
 
@@ -146,7 +147,7 @@ async def pull_sources() -> None:
         # repo.git.reset("--hard", remote.refs[repo.active_branch.name].name)
 
     except GitCommandError as e:
-        raise HTTPException(HTTPStatus.CONFLICT, f"Failed to pull remote: {e}")
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Failed to pull remote: {e}")
 
 
 # TODO: git status, git add, git commit, git push

@@ -33,6 +33,7 @@
     height: 100%;
     flex-direction: row;
     flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 .editor-container {
@@ -44,6 +45,7 @@
     border-right: 2px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .toolbar {
@@ -74,9 +76,14 @@
     text-align: center;
 }
 
-/* TODO: adjust position: top of editor */
 .notification {
     display: none;
+    position: absolute;
+    top: 3.5rem;
+    left: 45%;
+    right: 45%;
+    text-align: center;
+    z-index: 5;
     color: white;
     background-color: var(--bg-dark);
     padding: 0.5rem;
@@ -84,12 +91,12 @@
 }
 
 .notification.show-success {
-    display: inline;
+    display: block;
     background-color: var(--success-color);
 }
 
 .notification.show-error {
-    display: inline;
+    display: block;
     background-color: var(--danger-color);
 }
 
@@ -228,6 +235,8 @@
     display: flex;
     align-items: center;
     overflow: auto hidden;
+    /* height: 2.5rem; */
+    height: 3rem;
 }
 
 .tab-list::-webkit-scrollbar {
@@ -240,7 +249,10 @@
     border-right: 2px solid var(--border-color);
     border-bottom: 2px solid var(--border-color);
     padding: 0.5rem 1rem 0.5rem 1rem;
-    flex-shrink: 0;
+    flex-shrink: 0; /* force overflow */
+    height: calc(100% - 1rem - 2px);
+    display: flex;
+    align-items: center;
 
     & span {
         pointer-events: none;

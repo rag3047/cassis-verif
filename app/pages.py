@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
 
-from .controllers.doxygen import get_doxygen_callgraph_image_paths
+from .controllers.doxygen import get_doxygen_docs, get_doxygen_callgraph_image_paths
 from .controllers.cbmc import (
     get_cbmc_proof,
     get_cbmc_proofs,
@@ -65,7 +65,17 @@ async def software_design_document(request: Request) -> HTMLResponse:
 async def doxygen(request: Request) -> HTMLResponse:
     log.info("Rendering doxygen page")
 
+    doxygen_available = False
+
+    try:
+        await get_doxygen_docs("")
+        doxygen_available = True
+
+    except HTTPException:
+        pass
+
     context = {
+        "doxygen_available": doxygen_available,
         "request": request,
     }
 

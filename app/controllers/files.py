@@ -2,12 +2,11 @@ import re
 
 from os import getenv
 from typing import Literal, Annotated
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from logging import getLogger
 from pathlib import Path
-from http import HTTPStatus
 from shutil import rmtree
 
 from ..utils.errors import HTTPError
@@ -30,10 +29,7 @@ class FileSystemPath(BaseModel):
     type: Literal["dir", "file"]
 
 
-@router.get(
-    "",
-    responses={404: {"model": HTTPError}},
-)
+@router.get("")
 async def list_directory_tree(
     include_hidden: bool = False,
 ) -> list[FileSystemPath]:
@@ -60,7 +56,7 @@ async def list_directory_tree(
 
 @router.get(
     "/{path:path}",
-    responses={404: {"model": HTTPError}},
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def download_file(path: str) -> FileResponse:
     """Return file content from proof directory."""
@@ -69,18 +65,18 @@ async def download_file(path: str) -> FileResponse:
     file_path = Path(DATA_DIR) / path
 
     if not file_path.exists():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "File not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File not found")
 
     if not file_path.is_file():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "File not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File not found")
 
     return FileResponse(file_path)
 
 
 @router.post(
     "",
-    status_code=HTTPStatus.NO_CONTENT,
-    responses={409: {"model": HTTPError}},
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
 async def create_path(
     path: FileSystemPath,
@@ -99,12 +95,12 @@ async def create_path(
             abs_path.touch(exist_ok=False)
 
     except OSError:
-        raise HTTPException(HTTPStatus.CONFLICT, "Path already exists")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Path already exists")
 
 
 @router.delete(
     "/{path:path}",
-    status_code=HTTPStatus.NO_CONTENT,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_path(path: str) -> None:
     """Delete file or directory."""
@@ -121,8 +117,8 @@ async def delete_path(path: str) -> None:
 
 @router.put(
     "/{path:path}",
-    status_code=HTTPStatus.NO_CONTENT,
-    responses={404: {"model": HTTPError}},
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def update_file(
     path: str,
@@ -134,7 +130,7 @@ async def update_file(
     file_path = Path(DATA_DIR) / path
 
     if not file_path.exists() or not file_path.is_file():
-        raise HTTPException(HTTPStatus.NOT_FOUND, "File not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File not found")
 
     with open(file_path, "w") as file:
         file.write(content)

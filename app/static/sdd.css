@@ -6,9 +6,11 @@
 .content {
     display: flex;
     flex-grow: 1;
+    position: relative;
+    overflow: auto;
 }
 
-#result-frame {
-    border: none;
+#viewerContainer {
     width: 100%;
+    position: absolute;
 }

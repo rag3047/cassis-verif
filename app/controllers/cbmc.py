@@ -271,6 +271,7 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
 
     num_proof_runs = len(await get_cbmc_verification_task_result_list())
 
+    CBMC_PROOFS_TASK_OUTPUT.parent.mkdir(exist_ok=True)
     CBMC_PROOFS_TASK_OUTPUT.touch(exist_ok=True)
     fd = CBMC_PROOFS_TASK_OUTPUT.open("w")
 

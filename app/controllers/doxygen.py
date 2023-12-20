@@ -41,7 +41,8 @@ async def build_doxygen_doc():
     # call doxygen in subprocess
     DOXYGEN_BUILD_TASK = await create_subprocess_exec(
         "doxygen",
-        "/cassis-verif/Doxyfile",
+        "Doxyfile",
+        cwd=DOXYGEN_DIR,
         stdout=PIPE,
         stderr=PIPE,
     )

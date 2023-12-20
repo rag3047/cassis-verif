@@ -53,7 +53,7 @@ RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-2
 # TODO: move includes to data dir? or use FSW profiles? how to handle different architectures? rtems etc.
 ADD includes/* includes/
 COPY cbmc-setup-noninteractive.py cbmc-setup-noninteractive.py
-COPY Doxyfile Doxyfile
+COPY doxygen doxygen
 
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

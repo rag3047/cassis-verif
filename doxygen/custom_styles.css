@@ -1,0 +1,17 @@
+html {
+    --font: Helvetica, Arial, sans-serif;
+    --code-font: "Courier New", Courier, monospace;
+    --text-color: white;
+    --bg-dark: rgba(24, 24, 24, 255);
+    --bg-light: rgba(31, 31, 31, 255);
+    --border-color: rgba(38, 38, 38, 255);
+    --danger-color: rgba(152, 70, 70, 255);
+    --success-color: rgba(97, 152, 70, 255);
+    --warning-color: rgba(255, 190, 70, 255);
+    --info-color: rgba(87, 189, 189, 255);
+    --link-color: rgba(100, 100, 204, 255);
+    /* height: 100%;
+    font-family: var(--font); */
+}
+
+/* TODO: Restyle Doxygen Docs to match app style */
