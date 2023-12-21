@@ -17,7 +17,7 @@
 .toolbar {
     padding: 0.5rem 1.5rem 0.5rem 1.5rem;
     border-bottom: 2px solid var(--border-color);
-    box-shadow: 0 0 10px black;
+    box-shadow: 0 10px 10px -10px black;
     position: relative;
     z-index: 1;
     display: flex;
@@ -61,7 +61,7 @@
     border-top: 2px solid var(--border-color);
     font-family: var(--code-font);
     /* TODO: fix shadow (only top) */
-    box-shadow: inset 0px 0px 10px 0px black;
+    box-shadow: inset 0px 10px 10px -10px black;
 }
 
 #modal-add-proof {

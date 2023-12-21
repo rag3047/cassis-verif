@@ -4,7 +4,7 @@ html {
     --text-color: white;
     --bg-dark: rgba(24, 24, 24, 255);
     --bg-light: rgba(31, 31, 31, 255);
-    --border-color: rgba(38, 38, 38, 255);
+    --border-color: rgba(50, 50, 50, 255);
     --danger-color: rgba(152, 70, 70, 255);
     --success-color: rgba(97, 152, 70, 255);
     --warning-color: rgba(255, 190, 70, 255);
@@ -42,11 +42,12 @@ body {
         color: white;
         border: none;
         margin-right: 0.5rem;
+        border: 2px solid transparent;
+        border-radius: 2px;
     }
 
     & a:hover {
-        border: 1px solid gray;
-        border-radius: 2px;
+        border: 2px solid gray;
     }
 }
 
@@ -125,6 +126,11 @@ body {
     }
 
     & input:focus {
+        outline: none;
+        border-color: gray;
+    }
+
+    & input:hover {
         outline: none;
         border-color: gray;
     }
@@ -379,6 +385,10 @@ body {
     cursor: pointer;
 }
 
+.nice-select:after {
+    border-color: white;
+}
+
 .nice-select .nice-select-dropdown {
     background-color: var(--bg-dark);
     border: 2px solid var(--border-color);
@@ -412,6 +422,10 @@ body {
 
 .nice-select .list {
     border-radius: 0px;
+}
+
+.nice-select .list::-webkit-scrollbar {
+    width: 0.5rem;
 }
 
 .nice-select .option {
