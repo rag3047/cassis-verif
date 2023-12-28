@@ -5,7 +5,11 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
 
-from .controllers.doxygen import get_doxygen_docs, get_doxygen_callgraph_image_paths
+from .controllers.doxygen import (
+    get_doxygen_docs,
+    get_doxygen_callgraph_image_paths,
+    get_doxygen_function_params,
+)
 from .controllers.cbmc import (
     get_cbmc_proof,
     get_cbmc_proofs,
@@ -66,6 +70,7 @@ async def doxygen(request: Request) -> HTMLResponse:
     log.info("Rendering doxygen page")
 
     doxygen_available = False
+    href = request.query_params.get("href", "index.html")
 
     try:
         await get_doxygen_docs("")
@@ -76,6 +81,7 @@ async def doxygen(request: Request) -> HTMLResponse:
 
     context = {
         "doxygen_available": doxygen_available,
+        "href": href,
         "request": request,
     }
 
@@ -94,6 +100,7 @@ async def editor(request: Request) -> HTMLResponse:
     selected_proof = None
     loops = []
     callgraphs = None
+    params = []
 
     if proof_name:
         try:
@@ -115,16 +122,27 @@ async def editor(request: Request) -> HTMLResponse:
         except HTTPException as e:
             log.warn(f"Exception ignored: {e}")
 
+        try:
+            params = await get_doxygen_function_params(
+                file_name.split("/")[-1],
+                proof_name,
+            )
+
+        except HTTPException as e:
+            log.warn(f"Exception ignored: {e}")
+
     log.debug(f"{selected_proof=}")
     log.debug(f"{loops=}")
     log.debug(f"{callgraphs=}")
+    log.debug(f"{params=}")
 
     context = {
         "request": request,
         "selected_proof": selected_proof,
         "proofs": await get_cbmc_proofs(),
         "loops": loops,
-        "callgraphs": callgraphs,
+        "graphs": callgraphs,
+        "params": params,
     }
 
     return templates.TemplateResponse("editor.html", context)

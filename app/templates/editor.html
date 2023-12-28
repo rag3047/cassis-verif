@@ -53,63 +53,105 @@
                         {% endfor %}
                     </select>
                 </div>
-                    <div class="loading hidden">
-                        <div class="lds-dual-ring"></div>
-                    </div>
-                    <div class="hints {{ 'hidden' if selected_proof is none }}">
-                        <div class="hint-section ai"><h2>AI Description goes here</h2></div>
-                        <div class="hint-section doxygen">
-                            <h2>Callgraphs</h2>
-                            <p>
-                                TODO Description<br/>
-                                <a target="_blank" rel="noreferrer" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.file_href) }}">
-                                    See Doxygen for more Info
-                                </a>
-                            </p>
-                            <div class="callgraphs {{ 'hidden' if not callgraphs.callee or not callgraphs.caller }}">
-                                <h4>Callee Graph</h4>
-                                <a class="callee-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.callee) }}">
-                                    <img class="callee" src="{{ url_for('get_doxygen_docs', file_path=callgraphs.callee) }}" alt="Calleegraph" />
-                                </a>
-                                <h4>Caller Graph</h4>
-                                <a class="caller-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=callgraphs.caller) }}">
-                                    <img class="caller" src="{{ url_for('get_doxygen_docs', file_path=callgraphs.caller) }}" alt="Callergraph" />
-                                </a>
-                            </div>
-                            <div class="callgraph-error {{ 'hidden' if callgraphs.callee and callgraphs.caller }}">
-                                <h4 class="alert danger margin-0">Callgraphs currently unavailable...</h4>
-                            </div>
+                <div class="loading hidden">
+                    <div class="lds-dual-ring"></div>
+                </div>
+                <div class="hints {{ 'hidden' if selected_proof is none }}">
+                    <div class="hint-section ai"><h2>AI Description goes here</h2></div>
+                    <div class="hint-section callgraphs-container">
+                        <h2>Callgraphs</h2>
+                        <p>
+                            The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> of the selected function.
+                            Use this information to determine possible argument values and global state, but also to decide which functions
+                            to stub out.<br/>
+                            <!-- TODO: Maybe move this link to context section (or add input/global state modeling links there...) -->
+                            <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces">
+                                More info on Stubs
+                            </a>
+                            <br/>
+                            <a id="doxygen-link" target="_blank" rel="noreferrer" href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}">
+                                Full Doxygen Docs
+                            </a>
+                        </p>
+                        <div class="callgraphs {{ 'hidden' if not graphs.callgraph or not graphs.inverse_callgraph }}">
+                            <h4>Callgraph</h4>
+                            <a class="cgraph-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}">
+                                <img class="cgraph" src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" alt="Callgraph" />
+                            </a>
+                            <h4>Inverse Callgraph</h4>
+                            <a class="icgraph-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}">
+                                <img class="icgraph" src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" alt="Inverse Callgraph" />
+                            </a>
                         </div>
-                        <div class="hint-section context"><h2>Function Context goes here</h2></div>
-                        <div class="hint-section loop-unwinding">
-                            <h2>Loop Unwinding</h2>
-                            <p>
-                                The following Loops were detected in the execution trace of the selected proof.
-                                A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
-                                <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html">
-                                    See CBMC Tutorial for more Info
-                                </a>
-                            </p>
-                            <ul class="table">
+                        <div class="callgraph-error {{ 'hidden' if graphs.callgraph and graphs.inverse_callgraph }}">
+                            <h4 class="alert danger margin-0">Callgraphs currently unavailable...</h4>
+                        </div>
+                    </div>
+                    <div class="hint-section context-container">
+                        <h2>Function Context</h2>
+                        <div class="context {{ 'hidden' if not params }}">
+                            <p>TODO description</p>
+                            <h4>Function Params</h4>
+                            <ul class="table param-table">
                                 <li class="table-item">
                                     <h4 class="width-50">Name</h4>
-                                    <h4 class="width-50">File/Line</h4>
+                                    <h4 class="width-50">Type</h4>
                                 </li>
-                                {% if loops | length > 0 %} {% for _loop in loops %}
+                                {% if params | length > 0 %} {% for param in params %}
                                 <li class="table-item">
-                                    <div class="width-50">{{ _loop.name }}</div>
-                                    <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
-                                    <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
+                                    <div class="width-50">{{ param.name }}</div>
+                                    {% if param.ref %}
+                                    <div class="width-50">
+                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html">
+                                            {{ param.type }}
+                                        </a>
+                                    </div>
+                                    {% else %}
+                                    <div class="width-50">{{ param.type }}</div>
+                                    {% endif %}
                                 </li>
                                 {% endfor %} {% else %}
-                                <li class="table-item-empty"><h4>There are no loops in the selected proof...</h4></li>
+                                <li class="table-item-empty"><h4>The selected function has no params...</h4></li>
                                 {% endif %}
                             </ul>
+                            <h4>Global State</h4>
+                            <div>
+                                TODO
+                            </div>
+                        </div>
+                        <div class="context-error {{ 'hidden' if params }}">
+                            <h4 class="alert danger margin-0">Function context currently unavailable...</h4>
                         </div>
                     </div>
-                    <div>
-                        <h3 class="no-proof-selected {{ 'hidden' if selected_proof is not none }}">Please select a proof to display hints</h3>
+                    <div class="hint-section loop-unwinding">
+                        <h2>Loop Unwinding</h2>
+                        <p>
+                            The following Loops were detected in the execution trace of the selected proof.
+                            A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
+                            <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html">
+                                More info on Loop Unwinding
+                            </a>
+                        </p>
+                        <ul class="table width-80">
+                            <li class="table-item">
+                                <h4 class="width-50">Name</h4>
+                                <h4 class="width-50">File:Line</h4>
+                            </li>
+                            {% if loops | length > 0 %} {% for _loop in loops %}
+                            <li class="table-item">
+                                <div class="width-50">{{ _loop.name }}</div>
+                                <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
+                                <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
+                            </li>
+                            {% endfor %} {% else %}
+                            <li class="table-item-empty"><h4>There are no loops in the selected proof...</h4></li>
+                            {% endif %}
+                        </ul>
                     </div>
+                </div>
+                <div>
+                    <h3 class="no-proof-selected {{ 'hidden' if selected_proof is not none }}">Please select a proof to display hints</h3>
+                </div>
             </div>
         </div>
 

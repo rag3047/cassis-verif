@@ -20,7 +20,7 @@
         </header>
         <main class="content">
             {% if doxygen_available %}
-            <iframe id="doxygen-frame" src="{{ url_for('get_doxygen_docs', file_path='index.html') }}"></iframe>
+            <iframe id="doxygen-frame" src="{{ url_for('get_doxygen_docs', file_path=href) }}"></iframe>
             {% else %}
             <h2 class="unavailable">Doxygen currentily unavailable. Try reloading the page.</h2>
             {% endif %}

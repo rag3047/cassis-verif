@@ -1,4 +1,5 @@
-import xml.etree.ElementTree as ET
+# import xml.etree.ElementTree as ET
+
 
 from os import getenv
 from typing import Annotated
@@ -9,6 +10,8 @@ from asyncio.subprocess import Process, create_subprocess_exec, PIPE
 from pathlib import Path
 from asyncio import Task, create_task
 from pydantic import BaseModel
+from lxml import etree as ET
+from lxml.etree import _Element as Element, _ElementTree as ElementTree
 
 from ..utils.errors import HTTPError
 
@@ -88,8 +91,8 @@ async def get_doxygen_docs(file_path: str) -> FileResponse:
 
 class DoxygenCallgraphs(BaseModel):
     file_href: Path
-    callee: Path
-    caller: Path
+    callgraph: Path
+    inverse_callgraph: Path
 
 
 @router.get(
@@ -123,22 +126,22 @@ async def get_doxygen_callgraph_image_paths(
     html_dir = Path(DOXYGEN_DIR) / "html"
 
     file_href = Path(f"{file_ref}.html#{refid[1:]}")
-    callee_graph = html_dir / f"{func_ref}_cgraph_org.svg"
-    caller_graph = html_dir / f"{func_ref}_icgraph_org.svg"
+    callgraph = html_dir / f"{func_ref}_cgraph_org.svg"
+    inverse_callgraph = html_dir / f"{func_ref}_icgraph_org.svg"
 
     # "_org" files for callgraphs are only generated if the callgraph is large.
     # If they don't exist, use the normal files.
-    if not callee_graph.exists():
-        callee_graph = html_dir / f"{func_ref}_cgraph.svg"
+    if not callgraph.exists():
+        callgraph = html_dir / f"{func_ref}_cgraph.svg"
 
-    if not caller_graph.exists():
-        caller_graph = html_dir / f"{func_ref}_icgraph.svg"
+    if not inverse_callgraph.exists():
+        inverse_callgraph = html_dir / f"{func_ref}_icgraph.svg"
 
     log.debug(f"{file_href=!s}")
-    log.debug(f"{callee_graph=!s}")
-    log.debug(f"{caller_graph=!s}")
+    log.debug(f"{callgraph=!s}")
+    log.debug(f"{inverse_callgraph=!s}")
 
-    if not callee_graph.exists() or not caller_graph.exists():
+    if not callgraph.exists() or not inverse_callgraph.exists():
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             "Callgraph images not found. Try rebuilding the doxygen documentation.",
@@ -146,9 +149,41 @@ async def get_doxygen_callgraph_image_paths(
 
     return DoxygenCallgraphs(
         file_href=file_href,
-        callee=callee_graph.relative_to(html_dir),
-        caller=caller_graph.relative_to(html_dir),
+        callgraph=callgraph.relative_to(html_dir),
+        inverse_callgraph=inverse_callgraph.relative_to(html_dir),
     )
+
+
+class DoxygenFunctionParam(BaseModel):
+    type: str
+    name: str
+    ref: str | None
+
+
+@router.get(
+    "/function-params",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": HTTPError},
+        status.HTTP_409_CONFLICT: {"model": HTTPError},
+    },
+)
+async def get_doxygen_function_params(
+    file_name: Annotated[str, Query(..., alias="file-name")],
+    func_name: Annotated[str, Query(..., alias="func-name")],
+) -> list[DoxygenFunctionParam]:
+    """Return the function parameters for the given file and function."""
+    global DOXYGEN_BUILD_TASK
+    log.info("Get doxygen function parameters")
+
+    if DOXYGEN_BUILD_TASK is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Doxygen build task running",
+        )
+
+    file_ref, func_ref = _parse_doxygen_index(file_name, func_name)
+
+    return _get_function_params(file_ref, func_ref)
 
 
 # ------------------------------------------------------------
@@ -186,28 +221,32 @@ def _parse_doxygen_index(file_name, func_name) -> tuple[str, str]:
             "Index file not found. Try rebuilding the doxygen documentation.",
         )
 
-    index = ET.parse(index_file)
+    index: ElementTree = ET.parse(index_file)
 
-    # TODO: fix xpath ('and' currently not supported): ./doxygenindex/compound[@kind = 'file' and name={file_name}]
-    file = index.find(f"./compound[name='{file_name}']")
+    xpath = f"./compound[@kind='file' and name='{file_name}']"
+    files: list[Element] = index.xpath(xpath)
 
-    if file is None:
+    if len(files) == 0:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             f"File '{file_name}' not found in doxygen index.",
         )
 
-    # TODO: fix xpath ('and' currently not supported): ./member[@kind = 'function' and name={func_name}]
-    func = file.find(f"./member[name='{func_name}']")
+    file = files[0]
 
-    if func is None:
+    xpath = f"./member[@kind='function' and name='{func_name}']"
+    functions: list[Element] = file.xpath(xpath)
+
+    if len(functions) == 0:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             f"Function '{func_name}' not found in doxygen index.",
         )
 
-    file_ref = file.attrib["refid"]
-    func_ref = func.attrib["refid"]
+    func = functions[0]
+
+    file_ref: str = file.attrib["refid"]
+    func_ref: str = func.attrib["refid"]
 
     log.debug(f"{file_ref=}")
     log.debug(f"{func_ref=}")
@@ -215,9 +254,60 @@ def _parse_doxygen_index(file_name, func_name) -> tuple[str, str]:
     return file_ref, func_ref
 
 
-# TODO: implement
-def _extract_doxygen_data(file_ref: str, func_ref: str) -> dict[str, str]:
-    """Extract doxygen data for the given file and function refids."""
-    log.info("Extracting doxygen data")
+def _get_function_params(file_ref: str, func_ref: str) -> None:
+    """Return the function parameters for the given file and function refids."""
+    log.info("Getting doxygen function parameters")
 
-    file_data = ET.parse(Path(DOXYGEN_DIR) / "xml" / f"{file_ref}.xml")
+    xml_file = Path(DOXYGEN_DIR) / "xml" / f"{file_ref}.xml"
+    log.debug(f"{xml_file=!s}")
+
+    if not xml_file.exists():
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"File '{file_ref}' not found in doxygen output.",
+        )
+
+    file_data: ElementTree = ET.parse(xml_file)
+
+    xpath = f"./compounddef/sectiondef[@kind ='func']/memberdef[@kind='function' and @id='{func_ref}']/param"
+    param_list: list[Element] = file_data.xpath(xpath)
+    log.debug(f"#params={len(param_list)}")
+
+    params: list[DoxygenFunctionParam] = []
+
+    for param in param_list:
+        param_type: Element = param.xpath("type")[0]
+        param_name: str = param.xpath("declname/text()")[0]
+        param_ref: list[Element] = param_type.xpath("ref")
+
+        param_type_str: str = param_type.text
+        param_ref_id: str | None = None
+
+        if len(param_ref) > 0:
+            param_ref_id = param_ref[0].attrib.get("refid", None)
+            param_type_str += param_ref[0].text + param_ref[0].tail
+
+        params.append(
+            DoxygenFunctionParam(
+                type=param_type_str,
+                name=param_name,
+                ref=param_ref_id,
+            )
+        )
+
+    return params
+
+
+def get_param_type(param: Element) -> str:
+    """Return the type of the given parameter."""
+    log.info("Getting function parameter type")
+
+    param_type = param.find("type")
+
+
+# # TODO: implement
+# def _extract_doxygen_data(file_ref: str, func_ref: str) -> dict[str, str]:
+#     """Extract doxygen data for the given file and function refids."""
+#     log.info("Extracting doxygen data")
+
+#     file_data: ElementTree = ET.parse(Path(DOXYGEN_DIR) / "xml" / f"{file_ref}.xml")

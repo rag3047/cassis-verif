@@ -72,6 +72,11 @@
     }
 }
 
+/* TODO: make toolbar sticky */
+/* .hints {
+    overflow: auto;
+} */
+
 .no-proof-selected {
     text-align: center;
 }
@@ -189,12 +194,17 @@
     border-bottom: none;
 }
 
-.table-item > div {
-    font-family: var(--code-font);
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-grow: 1;
+.table-item {
+    line-break: anywhere;
+    text-align: left;
+
+    & > div {
+        font-family: var(--code-font);
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-grow: 1;
+    }
 }
 
 .table-item-empty.danger {
@@ -290,5 +300,9 @@
 .tab.active {
     background-color: var(--bg-light);
     border-bottom: 2px solid var(--bg-light);
-    /* border-top: 2px solid gray; */
+}
+
+.tab.unsaved > span::after {
+    content: "*";
+    color: white;
 }

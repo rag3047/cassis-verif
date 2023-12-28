@@ -37,6 +37,8 @@ require(["vs/editor/editor.main"], async function () {
 
     editor.onDidChangeModelContent(function (event) {
         unsaved_changes.add(editor.getModel().uri.toString());
+        // TODO: mark tab as unsaved
+        document.querySelector(".tab.active").classList.add("unsaved");
     });
 
     if (selected_file) {
@@ -91,6 +93,7 @@ async function save_file() {
             notification.classList.remove("show-success");
         }, 3000);
         unsaved_changes.delete(model.uri.toString());
+        document.querySelector(".tab.active").classList.remove("unsaved");
     } else {
         notification.textContent = "Error";
         notification.classList.add("show-error");
@@ -140,12 +143,15 @@ function select_editor_tab_by_uri(uri) {
     selected_tab.classList.add("active");
 }
 
-function close_editor_tab(event) {
+async function close_editor_tab(event) {
     event.stopPropagation();
     const tab = event.target.parentElement;
     const uri = tab.dataset.uri;
 
-    unsaved_changes.delete(uri);
+    // auto save file if it has unsaved changes
+    if (unsaved_changes.has(uri)) {
+        await save_file();
+    }
 
     const model = monaco.editor.getModel(uri);
     model.dispose();
@@ -443,14 +449,13 @@ async function refresh_hints(hard_refresh = false) {
 
     let responses;
     try {
+        const get_params = `file-name=${encodeURIComponent(file_name.split("/").pop())}&func-name=${proof_name}`;
+
         responses = await Promise.all([
             // TODO get all hints
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
-            fetch(
-                `api/v1/doxygen/callgraphs?file-name=${encodeURIComponent(
-                    file_name.split("/").pop()
-                )}&func-name=${proof_name}`
-            ),
+            fetch(`api/v1/doxygen/callgraphs?${get_params}`),
+            fetch(`api/v1/doxygen/function-params?${get_params}`),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
@@ -458,39 +463,82 @@ async function refresh_hints(hard_refresh = false) {
         return;
     }
 
-    const [loops, graphs] = responses;
+    const [loops, graphs, params] = responses;
 
     // TODO: setup hints
     await refresh_loop_unwinding(loops);
-    await refres_callgraphs(graphs);
+    await refresh_callgraphs(graphs);
+    await refresh_function_param_table(params);
+    // await refresh_global_state_table() TODO
 
     hints.classList.remove("hidden");
     loading_indicator.classList.add("hidden");
 }
 
+const context = hints_container.querySelector(".context");
+const param_table = context.querySelector(".param-table");
+const context_error = hints_container.querySelector(".context-error");
+
+async function refresh_function_param_table(params) {
+    if (params.error_code) {
+        context.classList.add("hidden");
+        context_error.classList.remove("hidden");
+        return;
+    } else {
+        context.classList.remove("hidden");
+        context_error.classList.add("hidden");
+    }
+
+    let html = `
+        <li class="table-item">
+            <h4 class="width-50">Name</h4>
+            <h4 class="width-50">Type</h4>
+        </li>\n`;
+
+    for (const param of params) {
+        let type = param.type;
+
+        if (param.ref) {
+            type = `<a target="_blank" href="doxygen?href=${encodeURIComponent(param.ref)}.html">${param.type}</a>`;
+        }
+
+        html += `
+            <li class="table-item">
+                <div class="width-50">${param.name}</div>
+                <div class="width-50">${type}</div>
+            </li>\n`;
+    }
+
+    param_table.innerHTML = html;
+}
+
+async function refresh_global_state_table(global_state) {}
+
 const callgraphs = hints_container.querySelector(".callgraphs");
 const callgraph_error = hints_container.querySelector(".callgraph-error");
-const callee_graph = callgraphs.querySelector(".callee");
-const callee_link = callgraphs.querySelector(".callee-link");
-const caller_graph = callgraphs.querySelector(".caller");
-const caller_link = callgraphs.querySelector(".caller-link");
+const cgraph = callgraphs.querySelector(".cgraph");
+const cgraph_link = callgraphs.querySelector(".cgraph-link");
+const icgraph = callgraphs.querySelector(".icgraph");
+const icgraph_link = callgraphs.querySelector(".icgraph-link");
+const doxygen_link = hints_container.querySelector("#doxygen-link");
 
-async function refres_callgraphs(graphs) {
+async function refresh_callgraphs(graphs) {
     if (graphs.error_code) {
         callgraphs.classList.add("hidden");
         callgraph_error.classList.remove("hidden");
-        // callgraph_error.textContent = graphs.detail;
         return;
     } else {
         callgraphs.classList.remove("hidden");
         callgraph_error.classList.add("hidden");
     }
 
+    doxygen_link.href = "doxygen?href=" + encodeURIComponent(graphs.file_href);
+
     const prefix = "api/v1/doxygen/docs/";
-    callee_link.href = prefix + graphs.callee;
-    callee_graph.src = prefix + graphs.callee;
-    caller_link.href = prefix + graphs.caller;
-    caller_graph.src = prefix + graphs.caller;
+    cgraph_link.href = prefix + graphs.callgraph;
+    cgraph.src = prefix + graphs.callgraph;
+    icgraph_link.href = prefix + graphs.inverse_callgraph;
+    icgraph.src = prefix + graphs.inverse_callgraph;
 }
 
 const loop_table = hints_container.querySelector(".loop-unwinding > .table");
