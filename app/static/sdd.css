@@ -62,21 +62,24 @@
     transform: translateY(-2px) rotate(45deg);
 }
 
-#page-num {
-    width: 50px;
+input {
     padding: 0.5rem;
     border: 2px solid var(--border-color);
     border-radius: 2px;
     background-color: var(--bg-dark);
     color: white;
     font-size: 1rem;
-    text-align: end;
 }
 
-#page-num:focus,
-#page-num:hover {
+input:focus,
+input:hover {
     outline: none;
     border-color: gray;
+}
+
+#page-num {
+    width: 50px;
+    text-align: end;
 }
 
 .sel-zoom {

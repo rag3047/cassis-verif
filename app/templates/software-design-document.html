@@ -34,11 +34,20 @@
                         min="1"
                         step="1"
                         onkeydown="set_page_number(event)"
-                        onclick="this.select()"
+                        onfocus="this.select()"
                     />
                     <span>of</span>
                     <span id="page-count" class="page-count">N/A</span>
                 </div>
+                <input
+                    type="search"
+                    id="search"
+                    class="search"
+                    placeholder="Search"
+                    oninput="reset_search()"
+                    onkeydown="find_next(event)"
+                    onfocus="this.select()"
+                />
                 <div>
                     <button class="button" onclick="zoom_out()">−</button>
                     <button class="button" onclick="zoom_in()">+</button>

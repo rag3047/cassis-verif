@@ -447,15 +447,17 @@ async function refresh_hints(hard_refresh = false) {
     no_proof_selected.classList.add("hidden");
     refresh_hints_button.removeAttribute("disabled");
 
+    // TODO: if hard_refresh: rebuild doxygen docs
+
     let responses;
     try {
         const get_params = `file-name=${encodeURIComponent(file_name.split("/").pop())}&func-name=${proof_name}`;
 
         responses = await Promise.all([
-            // TODO get all hints
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
             fetch(`api/v1/doxygen/callgraphs?${get_params}`),
             fetch(`api/v1/doxygen/function-params?${get_params}`),
+            fetch(`api/v1/doxygen/function-refs?${get_params}`),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
@@ -463,13 +465,12 @@ async function refresh_hints(hard_refresh = false) {
         return;
     }
 
-    const [loops, graphs, params] = responses;
+    const [loops, graphs, params, refs] = responses;
 
-    // TODO: setup hints
     await refresh_loop_unwinding(loops);
     await refresh_callgraphs(graphs);
     await refresh_function_param_table(params);
-    // await refresh_global_state_table() TODO
+    await refresh_ref_table(refs);
 
     hints.classList.remove("hidden");
     loading_indicator.classList.add("hidden");
@@ -512,7 +513,34 @@ async function refresh_function_param_table(params) {
     param_table.innerHTML = html;
 }
 
-async function refresh_global_state_table(global_state) {}
+const ref_table = context.querySelector(".ref-table");
+
+async function refresh_ref_table(refs) {
+    if (refs.error_code) {
+        context.classList.add("hidden");
+        context_error.classList.remove("hidden");
+        return;
+    } else {
+        context.classList.remove("hidden");
+        context_error.classList.add("hidden");
+    }
+
+    let html = `
+        <li class="table-item">
+            <h4 class="width-50">Name</h4>
+            <h4 class="width-50">Type</h4>
+        </li>\n`;
+
+    for (const ref of refs) {
+        html += `
+            <li class="table-item">
+                <div class="width-50">${ref.name}</div>
+                <div class="width-50">${ref.type}</div>
+            </li>\n`;
+    }
+
+    ref_table.innerHTML = html;
+}
 
 const callgraphs = hints_container.querySelector(".callgraphs");
 const callgraph_error = hints_container.querySelector(".callgraph-error");

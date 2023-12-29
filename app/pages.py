@@ -9,6 +9,7 @@ from .controllers.doxygen import (
     get_doxygen_docs,
     get_doxygen_callgraph_image_paths,
     get_doxygen_function_params,
+    get_doxygen_function_refs,
 )
 from .controllers.cbmc import (
     get_cbmc_proof,
@@ -101,6 +102,7 @@ async def editor(request: Request) -> HTMLResponse:
     loops = []
     callgraphs = None
     params = []
+    references = []
 
     if proof_name:
         try:
@@ -131,10 +133,20 @@ async def editor(request: Request) -> HTMLResponse:
         except HTTPException as e:
             log.warn(f"Exception ignored: {e}")
 
+        try:
+            references = await get_doxygen_function_refs(
+                file_name.split("/")[-1],
+                proof_name,
+            )
+
+        except HTTPException as e:
+            log.warn(f"Exception ignored: {e}")
+
     log.debug(f"{selected_proof=}")
     log.debug(f"{loops=}")
     log.debug(f"{callgraphs=}")
     log.debug(f"{params=}")
+    log.debug(f"{references=}")
 
     context = {
         "request": request,
@@ -143,6 +155,7 @@ async def editor(request: Request) -> HTMLResponse:
         "loops": loops,
         "graphs": callgraphs,
         "params": params,
+        "references": references,
     }
 
     return templates.TemplateResponse("editor.html", context)

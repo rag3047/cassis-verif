@@ -1,6 +1,3 @@
-# import xml.etree.ElementTree as ET
-
-
 from os import getenv
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Query
@@ -34,12 +31,7 @@ async def build_doxygen_doc():
     """Build the doxygen documentation"""
     global DOXYGEN_BUILD_TASK
     log.info("Building doxygen documentation")
-
-    if DOXYGEN_BUILD_TASK is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Doxygen build task already running",
-        )
+    _check_doxygen_is_available()
 
     # call doxygen in subprocess
     DOXYGEN_BUILD_TASK = await create_subprocess_exec(
@@ -71,14 +63,8 @@ async def build_doxygen_doc():
 )
 async def get_doxygen_docs(file_path: str) -> FileResponse:
     """Return doxygen documentation."""
-    global DOXYGEN_BUILD_TASK
     log.info("Get doxygen documentation")
-
-    if DOXYGEN_BUILD_TASK is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Doxygen build task running",
-        )
+    _check_doxygen_is_available()
 
     file_path = file_path or "index.html"
     abs_path = Path(DOXYGEN_DIR) / "html" / file_path
@@ -107,25 +93,18 @@ async def get_doxygen_callgraph_image_paths(
     func_name: Annotated[str, Query(..., alias="func-name")],
 ) -> DoxygenCallgraphs:
     """Return the paths to the doxygen callgraph images."""
-    global DOXYGEN_BUILD_TASK
     log.info("Get doxygen callgraph image paths")
+    _check_doxygen_is_available()
 
-    if DOXYGEN_BUILD_TASK is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Doxygen build task running",
-        )
-
-    file_ref, func_ref = _parse_doxygen_index(file_name, func_name)
-
-    # this is a weird hack to get the file path from the function refid and
-    # might not work in all cases?
-    [*path, refid] = func_ref.split("_")
-    func_ref = "_".join(path + [refid[1:]])
+    index = _get_doxygen_index()
+    _, func_ref = _get_file_and_func_refs(index, file_name, func_name)
 
     html_dir = Path(DOXYGEN_DIR) / "html"
 
-    file_href = Path(f"{file_ref}.html#{refid[1:]}")
+    # TODO: this is a weird hack to get the file path from the function refid and
+    # might not work in all cases?
+    file_href = Path(func_ref.replace("_1", ".html#"))
+    func_ref = func_ref.replace("_1", "_")
     callgraph = html_dir / f"{func_ref}_cgraph_org.svg"
     inverse_callgraph = html_dir / f"{func_ref}_icgraph_org.svg"
 
@@ -172,18 +151,47 @@ async def get_doxygen_function_params(
     func_name: Annotated[str, Query(..., alias="func-name")],
 ) -> list[DoxygenFunctionParam]:
     """Return the function parameters for the given file and function."""
-    global DOXYGEN_BUILD_TASK
     log.info("Get doxygen function parameters")
+    _check_doxygen_is_available()
 
-    if DOXYGEN_BUILD_TASK is not None:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Doxygen build task running",
-        )
-
-    file_ref, func_ref = _parse_doxygen_index(file_name, func_name)
+    index = _get_doxygen_index()
+    file_ref, func_ref = _get_file_and_func_refs(index, file_name, func_name)
 
     return _get_function_params(file_ref, func_ref)
+
+
+class DoxygenFunctionRef(BaseModel):
+    name: str
+    type: str
+    href: str
+
+
+@router.get(
+    "/function-refs",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": HTTPError},
+        status.HTTP_409_CONFLICT: {"model": HTTPError},
+    },
+)
+async def get_doxygen_function_refs(
+    file_name: Annotated[str, Query(..., alias="file-name")],
+    func_name: Annotated[str, Query(..., alias="func-name")],
+) -> list[DoxygenFunctionRef]:
+    """Return the function's references for the given file and function."""
+    log.info("Get doxygen function references")
+    _check_doxygen_is_available()
+
+    index = _get_doxygen_index()
+    file_ref, func_ref = _get_file_and_func_refs(index, file_name, func_name)
+
+    return sorted(
+        [
+            ref
+            for ref in _get_function_refs(index, file_ref, func_ref)
+            if "::" not in ref.name
+        ],
+        key=lambda x: x.type,
+    )
 
 
 # ------------------------------------------------------------
@@ -209,9 +217,18 @@ async def init_doxygen():
 # ------------------------------------------------------------
 
 
-def _parse_doxygen_index(file_name, func_name) -> tuple[str, str]:
-    """Parse the doxygen index file and return file and function refids."""
-    log.info("Parsing doxygen index file")
+def _check_doxygen_is_available() -> None:
+    """Check if doxygen is available."""
+    if DOXYGEN_BUILD_TASK is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Doxygen build task running",
+        )
+
+
+def _get_doxygen_index() -> ElementTree:
+    """Return the parsed doxygen index file."""
+    log.info("Getting doxygen index file")
 
     index_file = Path(DOXYGEN_DIR) / "xml" / "index.xml"
 
@@ -221,7 +238,16 @@ def _parse_doxygen_index(file_name, func_name) -> tuple[str, str]:
             "Index file not found. Try rebuilding the doxygen documentation.",
         )
 
-    index: ElementTree = ET.parse(index_file)
+    return ET.parse(index_file)
+
+
+def _get_file_and_func_refs(
+    index: ElementTree,
+    file_name: str,
+    func_name: str,
+) -> tuple[str, str]:
+    """Retrieve file and function refids from the doxygen index."""
+    log.info("Retrieving file and function refids")
 
     xpath = f"./compound[@kind='file' and name='{file_name}']"
     files: list[Element] = index.xpath(xpath)
@@ -254,7 +280,7 @@ def _parse_doxygen_index(file_name, func_name) -> tuple[str, str]:
     return file_ref, func_ref
 
 
-def _get_function_params(file_ref: str, func_ref: str) -> None:
+def _get_function_params(file_ref: str, func_ref: str) -> list[DoxygenFunctionParam]:
     """Return the function parameters for the given file and function refids."""
     log.info("Getting doxygen function parameters")
 
@@ -298,16 +324,44 @@ def _get_function_params(file_ref: str, func_ref: str) -> None:
     return params
 
 
-def get_param_type(param: Element) -> str:
-    """Return the type of the given parameter."""
-    log.info("Getting function parameter type")
+def _get_function_refs(
+    index: ElementTree,
+    file_ref: str,
+    func_ref: str,
+) -> list[DoxygenFunctionRef]:
+    """Return the function's references for the given file and function refids."""
+    log.info("Getting doxygen function references")
 
-    param_type = param.find("type")
+    xml_file = Path(DOXYGEN_DIR) / "xml" / f"{file_ref}.xml"
+    log.debug(f"{xml_file=!s}")
 
+    if not xml_file.exists():
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"File '{file_ref}' not found in doxygen output.",
+        )
 
-# # TODO: implement
-# def _extract_doxygen_data(file_ref: str, func_ref: str) -> dict[str, str]:
-#     """Extract doxygen data for the given file and function refids."""
-#     log.info("Extracting doxygen data")
+    file_data: ElementTree = ET.parse(xml_file)
 
-#     file_data: ElementTree = ET.parse(Path(DOXYGEN_DIR) / "xml" / f"{file_ref}.xml")
+    xpath = f"./compounddef/sectiondef[@kind ='func']/memberdef[@kind='function' and @id='{func_ref}']/references"
+    ref_list: list[Element] = file_data.xpath(xpath)
+    log.debug(f"#refs={len(ref_list)}")
+
+    refs: list[DoxygenFunctionRef] = []
+
+    for ref in ref_list:
+        ref_name: str = ref.text
+        href: str = ref.attrib["refid"].split("_1")[0] + ".html"
+
+        xpath = f"./compound/member[@refid='{ref.attrib['refid']}']/@kind"
+        ref_type: str = index.xpath(xpath)[0]
+
+        refs.append(
+            DoxygenFunctionRef(
+                name=ref_name,
+                type=ref_type,
+                href=href,
+            )
+        )
+
+    return refs

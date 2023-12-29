@@ -57,14 +57,21 @@
                     <div class="lds-dual-ring"></div>
                 </div>
                 <div class="hints {{ 'hidden' if selected_proof is none }}">
-                    <div class="hint-section ai"><h2>AI Description goes here</h2></div>
+                    <div class="hint-section ai">
+                        <h2>Description</h2>
+                        <p>
+                            The following paragraph contains an AI generated description of the selected function.
+                        </p>
+                        <p>
+                            TODO
+                        </p>
+                    </div>
                     <div class="hint-section callgraphs-container">
                         <h2>Callgraphs</h2>
                         <p>
                             The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> of the selected function.
                             Use this information to determine possible argument values and global state, but also to decide which functions
                             to stub out.<br/>
-                            <!-- TODO: Maybe move this link to context section (or add input/global state modeling links there...) -->
                             <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces">
                                 More info on Stubs
                             </a>
@@ -90,7 +97,13 @@
                     <div class="hint-section context-container">
                         <h2>Function Context</h2>
                         <div class="context {{ 'hidden' if not params }}">
-                            <p>TODO description</p>
+                            <p>
+                                The following two tables contain information about function arguments and referenced global state.
+                                Use this information to determine what values must be defined in the proof harness.<br/>
+                                <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html">
+                                    More info on writing Proof Harnesses
+                                </a>
+                            </p>
                             <h4>Function Params</h4>
                             <ul class="table param-table">
                                 <li class="table-item">
@@ -114,10 +127,29 @@
                                 <li class="table-item-empty"><h4>The selected function has no params...</h4></li>
                                 {% endif %}
                             </ul>
-                            <h4>Global State</h4>
-                            <div>
-                                TODO
-                            </div>
+                            <h4>External References</h4>
+                            <ul class="table ref-table">
+                                <li class="table-item">
+                                    <h4 class="width-50">Name</h4>
+                                    <h4 class="width-50">Type</h4>
+                                </li>
+                                {% if references | length > 0 %} {% for ref in references %}
+                                <li class="table-item">
+                                    <div class="width-50">{{ ref.name }}</div>
+                                    {% if ref.ref %}
+                                    <div class="width-50">
+                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ ref.ref | urlencode }}.html">
+                                            {{ ref.type }}
+                                        </a>
+                                    </div>
+                                    {% else %}
+                                    <div class="width-50">{{ ref.type }}</div>
+                                    {% endif %}
+                                </li>
+                                {% endfor %} {% else %}
+                                <li class="table-item-empty"><h4>The selected function has no external references...</h4></li>
+                                {% endif %}
+                            </ul>
                         </div>
                         <div class="context-error {{ 'hidden' if params }}">
                             <h4 class="alert danger margin-0">Function context currently unavailable...</h4>
