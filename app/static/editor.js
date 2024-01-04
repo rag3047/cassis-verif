@@ -37,7 +37,6 @@ require(["vs/editor/editor.main"], async function () {
 
     editor.onDidChangeModelContent(function (event) {
         unsaved_changes.add(editor.getModel().uri.toString());
-        // TODO: mark tab as unsaved
         document.querySelector(".tab.active").classList.add("unsaved");
     });
 
@@ -175,6 +174,14 @@ async function on_editor_tab_clicked(event) {
     editor.setModel(model);
     select_editor_tab_by_uri(uri);
     select_tree_node_by_path(path);
+}
+
+async function show_proof_source_file() {
+    const selected_proof = document.querySelector(".nice-select.sel-proof .current").textContent;
+    const source_file = document.querySelector(`#sel-proof option[value="${selected_proof}"]`)?.dataset.src;
+    if (source_file) {
+        select_tree_node_by_path(source_file);
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------
@@ -432,11 +439,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 //---------------------------------------------------------------------------------------------------------
 
 const hints_container = document.querySelector(".hints-container");
+const sel_proof = hints_container.querySelector("#sel-proof");
+
+async function on_proof_selected() {
+    const proof_name = sel_proof.value;
+    const harness_file = sel_proof.querySelector(`option[value="${proof_name}"]`).dataset.harness;
+
+    if (harness_file) {
+        const harness_path = `cbmc/proofs/${proof_name}/${harness_file}`;
+        select_tree_node_by_path(harness_path);
+        await refresh_hints();
+    }
+}
+
 const hints = hints_container.querySelector(".hints");
 const loading_indicator = hints_container.querySelector(".loading");
+const loading_text = loading_indicator.querySelector(".status");
 const no_proof_selected = hints_container.querySelector(".no-proof-selected");
 const refresh_hints_button = hints_container.querySelector("#btn-refresh-hints");
-const sel_proof = hints_container.querySelector("#sel-proof");
 
 async function refresh_hints(hard_refresh = false) {
     const proof_name = sel_proof.value;
@@ -447,11 +467,32 @@ async function refresh_hints(hard_refresh = false) {
     no_proof_selected.classList.add("hidden");
     refresh_hints_button.removeAttribute("disabled");
 
-    // TODO: if hard_refresh: rebuild doxygen docs
+    // if hard_refresh: rebuild doxygen docs
+    if (hard_refresh) {
+        loading_text.textContent = "Rebuilding doxygen docs...";
+
+        let response;
+        try {
+            response = await fetch(`api/v1/doxygen/build`, {
+                method: "POST",
+            });
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to rebuild doxygen docs, check console for details.`);
+            return;
+        }
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Failed to rebuild doxygen docs: ${error.detail}`);
+            return;
+        }
+    }
 
     let responses;
     try {
         const get_params = `file-name=${encodeURIComponent(file_name.split("/").pop())}&func-name=${proof_name}`;
+        loading_text.textContent = "Loading hints...";
 
         responses = await Promise.all([
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
@@ -474,6 +515,7 @@ async function refresh_hints(hard_refresh = false) {
 
     hints.classList.remove("hidden");
     loading_indicator.classList.add("hidden");
+    loading_text.textContent = "";
 }
 
 const context = hints_container.querySelector(".context");
@@ -575,7 +617,7 @@ async function refresh_loop_unwinding(loops) {
     let html = `
         <li class="table-item">
             <h4 class="width-50">Name</h4>
-            <h4 class="width-50">File/Line</h4>
+            <h4 class="width-50">File:Line</h4>
         </li>\n`;
 
     if (loops.error_code) {
@@ -587,6 +629,13 @@ async function refresh_loop_unwinding(loops) {
 
         loop_table.innerHTML = html;
         return;
+    }
+
+    if (loops.length == 0) {
+        html += `
+            <li class="table-item-empty">
+                <h4>There are no loops in the selected proof...</h4>
+            </li>\n`;
     }
 
     for (const loop of loops) {

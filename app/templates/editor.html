@@ -42,7 +42,7 @@
                 <div class="toolbar">
                     <button id="btn-toggle-editor" class="button" onclick="toggle_editor()">Hide Editor</button>
                     <button id="btn-refresh-hints" class="button" {{ 'disabled' if selected_proof is none }} onclick="refresh_hints(true)">Refresh</button>
-                    <select id="sel-proof" class="sel-proof" onchange="refresh_hints()">
+                    <select id="sel-proof" class="sel-proof" onchange="on_proof_selected()">
                         {% for proof in proofs %}
                             <option 
                                 value="{{ proof.name }}"
@@ -52,9 +52,11 @@
                             >{{ proof.name }}</option>
                         {% endfor %}
                     </select>
+                    <button id="btn-open-proof-source" class="button" onclick="show_proof_source_file()">Open Source File</button>
                 </div>
                 <div class="loading hidden">
                     <div class="lds-dual-ring"></div>
+                    <p class="status"></p>
                 </div>
                 <div class="hints {{ 'hidden' if selected_proof is none }}">
                     <div class="hint-section ai">

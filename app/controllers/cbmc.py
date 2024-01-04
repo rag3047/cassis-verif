@@ -195,15 +195,18 @@ async def get_cbmc_proof_loop_info(
             "veryclean",
             "goto",
             cwd=str(proof_dir),
-            stdout=DEVNULL,
-            stderr=DEVNULL,
+            stdout=PIPE,
+            stderr=PIPE,
         )
 
-        returncode = await task.wait()
+        stdout, stderr = await task.communicate()
 
-        if returncode != 0:
-            log.error("Failed to build goto binary")
-            return []
+        log.info(stdout.decode("ascii"))
+        if task.returncode != 0:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"Failed to build goto binary: {stderr.decode('ascii')}",
+            )
 
     task = await create_subprocess_exec(
         "cbmc",
@@ -211,14 +214,16 @@ async def get_cbmc_proof_loop_info(
         str(goto_binary),
         cwd=str(proof_dir),
         stdout=PIPE,
-        stderr=DEVNULL,
+        stderr=PIPE,
     )
 
-    stdout, _ = await task.communicate()
+    stdout, stderr = await task.communicate()
 
     if task.returncode != 0:
-        log.error("Failed to get loop info")
-        return []
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Failed to get loop info (check server logs for details): {stderr.decode('ascii')}",
+        )
 
     stdout_txt = stdout.decode("ascii")
 
