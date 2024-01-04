@@ -35,7 +35,8 @@ eventBus.on("pagechanging", ({ pageNumber }) => {
 let pdf;
 async function load_document() {
     // Load document.
-    pdf = await pdfjsLib.getDocument("static/CaSSIS-FSW-DDD_v3.pdf").promise;
+    // TODO: handle error if no pdf is available
+    pdf = await pdfjsLib.getDocument("api/v1/sdd").promise;
     pdfViewer.setDocument(pdf);
     linkService.setDocument(pdf, null);
 

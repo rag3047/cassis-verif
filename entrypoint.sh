@@ -19,16 +19,26 @@ if [[ ! -d $CBMC_ROOT ]]; then
     cd ../..
 fi
 
-echo "Entrypoint: $DATA_DIR"
-
-# DEV: extract C sources
-SRC_DIR="$DATA_DIR/src"
-if [[ -d $SRC_DIR ]]; then
-    echo "Entrypoint: Extracting C sources"
-    rm -rf $SRC_DIR
+if [[ -f "$PRESET_DIR/src.tgz" ]]; then
+    echo "Entrypoint: Extracting preset sources"
+    tar --extract --skip-old-files --file "$PRESET_DIR/src.tgz" --directory=data
 fi
 
-tar -xf /cassis-verif/src.tar.gz -C data
-# END DEV
+if [[ -f "$PRESET_DIR/hints.tgz" ]]; then
+    echo "Entrypoint: Extracting preset hints"
+    mkdir hints
+    tar --extract --skip-old-files --file "$PRESET_DIR/hints.tgz" --directory=hints
+fi
+
+if [[ ! -f "sdd.pdf" ]]; then
+    echo "Entrypoint: Copying SDD"
+    mv "$PRESET_DIR/sdd.pdf" .
+fi
+
+# if [[ -d "$PRESET_DIR/includes" ]]; then
+#     # TODO fix this
+#     echo "Entrypoint: Copying preset includes"
+#     cp -r "$PRESET_DIR/includes"/* "$CBMC_ROOT/includes"
+# fi
 
 exec "$@"

@@ -1,3 +1,13 @@
+ARG UBUNTU_VERSION=22.04
+ARG PRESET=default
+
+FROM ubuntu:${UBUNTU_VERSION} AS default
+RUN mkdir /output
+
+FROM ubuntu:16.04 AS cassis
+# Here we build dependencies for the CaSSIS FSW such as RTEMS for SPARC LEON3
+RUN mkdir /output && echo "cassis" > /output/test.txt
+
 # TODO: RTEMS 4.11 Build container
 # FROM ubuntu:22.04 AS builder
 # LABEL maintainer="Raphael Gerber <raphael.gerber@students.unibe.ch>"
@@ -20,8 +30,15 @@
 #     && cd rsb/rtems \
 #     && ../source-builder/sb-set-builder --prefix=/rtems/4.11 4.11/rtems-sparc
 
-FROM ubuntu:22.04
+
+# Select preset based on build arg
+FROM ${PRESET} AS preset
+
+FROM ubuntu:${UBUNTU_VERSION}
 LABEL maintainer="Raphael Gerber <raphael.gerber@students.unibe.ch>"
+
+# Apparently this needs to be repeated if we want to use it in the COPY command
+ARG PRESET
 
 EXPOSE 80
 
@@ -31,13 +48,15 @@ ENV LC_ALL=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV WORKDIR=/cassis-verif
+ENV USE_PREBUILT_HINTS=true
 
-WORKDIR $WORKDIR
+WORKDIR ${WORKDIR}
 
-ENV DATA_DIR=$WORKDIR/data
-ENV CBMC_ROOT=$DATA_DIR/cbmc
-ENV PROOF_ROOT=$CBMC_ROOT/proofs
-ENV DOXYGEN_DIR=$WORKDIR/doxygen
+ENV DATA_DIR=${WORKDIR}/data
+ENV CBMC_ROOT=${DATA_DIR}/cbmc
+ENV PROOF_ROOT=${CBMC_ROOT}/proofs
+ENV DOXYGEN_DIR=${WORKDIR}/doxygen
+ENV PRESET_DIR=${WORKDIR}/preset
 
 RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-jinja2 universal-ctags bash-completion \
@@ -49,11 +68,12 @@ RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-2
     && apt-get install -y ./*cbmc*.deb ./*litani*.deb \
     && rm *cbmc*.deb *litani*.deb
 
-# Extract tar files in includes dir
-# TODO: move includes to data dir? or use FSW profiles? how to handle different architectures? rtems etc.
-ADD includes/* includes/
 COPY cbmc-setup-noninteractive.py cbmc-setup-noninteractive.py
 COPY doxygen doxygen
+
+# Copy Preset specific files
+COPY --from=preset /output/* preset/
+COPY presets/${PRESET}/* preset/
 
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
@@ -62,9 +82,6 @@ COPY app app
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# DEV: copy C sources because i'm not allowed to push to git...
-COPY src.tar.gz src.tar.gz
 
 VOLUME ["/cassis-verif/data"]
 

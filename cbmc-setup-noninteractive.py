@@ -7,6 +7,7 @@ import os
 import sys
 import shutil
 import logging
+import json
 
 from pathlib import Path
 
@@ -20,12 +21,24 @@ from cbmc_starter_kit.setup import (
     srcdir_definition,
 )
 
+PRESET_DIR = Path(os.getenv("PRESET_DIR"))
+project_defines_path = PRESET_DIR / "project-defines.json"
+
+project_defines = None
+if project_defines_path.exists():
+    project_defines = json.loads(project_defines_path.read_text())
+
 INCLUDES_TEXT = "INCLUDES += -I {}"
 DEFINES_TEXT = "DEFINES += -D {}"
 
 
 def includes_definition(includes: list[str]) -> str:
-    return os.linesep.join(INCLUDES_TEXT.format(incl) for incl in includes)
+    includes.insert(0, "$(CBMC_ROOT)/include")
+
+    return os.linesep.join(
+        INCLUDES_TEXT.format(incl.replace("$(PRESET_DIR)", str(PRESET_DIR)))
+        for incl in includes
+    )
 
 
 def defines_definition(defines: list[str]) -> str:
@@ -38,7 +51,7 @@ def parse_arguments():
         {
             "flag": "--project-name",
             "default": "cassis-verif",
-        }
+        },
     ]
     args = arguments.create_parser(options=options, description=desc).parse_args()
     arguments.configure_logging(args)
@@ -84,32 +97,21 @@ def cbmc_starter_kit_setup_noninteractive():
         print(litani_definition(litani, proof_root), file=mkfile)
         print(project_name_definition(project_name), file=mkfile)
 
-    # TODO: Make this configurable (or add support for presets (RTEMS, other RTOS etc.))
-    includes = [
-        "/cassis-verif/data/src/include",
-        "/cassis-verif/includes/include",
-        "/cassis-verif/includes/leon3/lib/include",
-        "/cassis-verif/includes/leon3/lib/include/grlib",
-        "/cassis-verif/includes/7.5.0/include",
-        "/cassis-verif/includes/sparc-rtems4.11/leon3/lib/include",
-    ]
+    if project_defines is None:
+        return
 
-    defines = ["__rtems__"]
+    includes = project_defines.get("includes", [])
+    defines = project_defines.get("defines", [])
+    env = project_defines.get("env", [])
 
     # Write project-specific definitions to cbmc/proofs/Makefile-project-defines
     makefile = proof_root / util.PROJECT_DEFINES
     with open(makefile, "a", encoding="utf-8") as mkfile:
         print(includes_definition(includes), file=mkfile, end=os.linesep * 2)
         print(defines_definition(defines), file=mkfile, end=os.linesep * 2)
-        print("ENABLE_MEMORY_PROFILING = TRUE", file=mkfile)
-        print(
-            "MEMORY_PROFILING = --profile-memory --profile-memory-interval 1",
-            file=mkfile,
-            end=os.linesep * 2,
-        )
-        print(
-            "CBMCFLAGS += --big-endian  --arch sparc", file=mkfile, end=os.linesep * 2
-        )
+
+        for e in env:
+            print(e, file=mkfile, end=os.linesep)
 
 
 if __name__ == "__main__":

@@ -105,6 +105,7 @@ input:hover {
     height: 100%;
     overflow: auto;
     position: absolute;
+    background-color: var(--bg-dark);
 }
 
 /* Hide number input arrow buttons */

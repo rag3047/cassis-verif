@@ -1,0 +1,16 @@
+{
+    "includes": [
+        "$(SRCDIR)/src/include",
+        "$(PRESET_DIR)/include",
+        "/cassis-verif/includes/leon3/lib/include",
+        "/cassis-verif/includes/leon3/lib/include/grlib",
+        "/cassis-verif/includes/7.5.0/include",
+        "/cassis-verif/includes/sparc-rtems4.11/leon3/lib/include"
+    ],
+    "defines": ["__rtems__"],
+    "env": [
+        "ENABLE_MEMORY_PROFILING = TRUE",
+        "MEMORY_PROFILING = --profile-memory --profile-memory-interval 1",
+        "CBMCFLAGS += --big-endian  --arch sparc"
+    ]
+}
