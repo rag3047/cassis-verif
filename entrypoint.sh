@@ -26,19 +26,22 @@ fi
 
 if [[ -f "$PRESET_DIR/hints.tgz" ]]; then
     echo "Entrypoint: Extracting preset hints"
-    mkdir hints
-    tar --extract --skip-old-files --file "$PRESET_DIR/hints.tgz" --directory=hints
+    mkdir -p hints
+    tar --extract --file "$PRESET_DIR/hints.tgz" --directory=hints
+fi
+
+if [[ -d "$PRESET_DIR/includes" ]]; then
+    echo "Entrypoint: Extracting preset includes"
+    files=$(find "$PRESET_DIR/includes" -type f -name "*.tgz")
+    for file in $files; do
+        tar --extract --file "$file" --directory="$PRESET_DIR/includes"
+        rm "$file"
+    done
 fi
 
 if [[ ! -f "sdd.pdf" ]]; then
     echo "Entrypoint: Copying SDD"
     mv "$PRESET_DIR/sdd.pdf" .
 fi
-
-# if [[ -d "$PRESET_DIR/includes" ]]; then
-#     # TODO fix this
-#     echo "Entrypoint: Copying preset includes"
-#     cp -r "$PRESET_DIR/includes"/* "$CBMC_ROOT/includes"
-# fi
 
 exec "$@"

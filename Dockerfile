@@ -68,15 +68,15 @@ RUN wget https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-2
     && apt-get install -y ./*cbmc*.deb ./*litani*.deb \
     && rm *cbmc*.deb *litani*.deb
 
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY cbmc-setup-noninteractive.py cbmc-setup-noninteractive.py
 COPY doxygen doxygen
 
 # Copy Preset specific files
-COPY --from=preset /output/* preset/
-COPY presets/${PRESET}/* preset/
-
-COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=preset /output/ preset/
+COPY presets/${PRESET}/ preset/
 
 COPY app app
 
