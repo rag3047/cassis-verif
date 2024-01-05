@@ -469,7 +469,7 @@ async function refresh_hints(hard_refresh = false) {
 
     // if hard_refresh: rebuild doxygen docs
     if (hard_refresh) {
-        loading_text.textContent = "Rebuilding doxygen docs...";
+        loading_text.textContent = "Rebuilding doxygen docs";
 
         let response;
         try {
@@ -492,7 +492,7 @@ async function refresh_hints(hard_refresh = false) {
     let responses;
     try {
         const get_params = `file-name=${encodeURIComponent(file_name.split("/").pop())}&func-name=${proof_name}`;
-        loading_text.textContent = "Loading hints...";
+        loading_text.textContent = "Loading hints";
 
         responses = await Promise.all([
             fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
@@ -539,7 +539,7 @@ async function refresh_ai_hints(hints) {
         hints_text.textContent = hints.hint;
         hints_text.classList.remove("italic");
     } else {
-        hints_text.textContent = "No description available...";
+        hints_text.textContent = "No description available";
         hints_text.classList.add("italic");
     }
 }
@@ -660,7 +660,7 @@ async function refresh_loop_unwinding(loops) {
     if (loops.length == 0) {
         html += `
             <li class="table-item-empty">
-                <h4>There are no loops in the selected proof...</h4>
+                <h4>There are no loops in the selected proof</h4>
             </li>\n`;
     }
 

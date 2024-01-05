@@ -182,7 +182,7 @@ async function pull_sources() {
     git_pull_button.setAttribute("disabled", "");
     git_pull_modal.showModal();
 
-    git_pull_modal_status.textContent = "Pulling sources...";
+    git_pull_modal_status.textContent = "Pulling sources";
     try {
         response = await fetch("api/v1/git/pull", {
             method: "POST",
@@ -200,7 +200,7 @@ async function pull_sources() {
         return;
     }
 
-    git_pull_modal_status.textContent = "Rebuilding doxygen docs...";
+    git_pull_modal_status.textContent = "Rebuilding doxygen docs";
     try {
         response = await fetch("api/v1/doxygen/build", {
             method: "POST",
@@ -244,7 +244,7 @@ async function show_add_proof_modal() {
     // reset modal
     pagination.dataset.offset = 0;
     input_search_function.value = "";
-    function_list.innerHTML = '<li class="list-item-empty"><h2>Please enter a function name...</h2></li>';
+    function_list.innerHTML = '<li class="list-item-empty"><h2>Please enter a function name</h2></li>';
     add_proof_modal_alert.classList.add("hidden");
     pagination.classList.add("hidden");
 
@@ -290,13 +290,13 @@ async function search_function() {
     const offset = parseInt(pagination.dataset.offset, 10) || 0;
 
     if (filter == "") {
-        function_list.innerHTML = '<li class="list-item-empty"><h2>Please enter a function name...</h2></li>';
+        function_list.innerHTML = '<li class="list-item-empty"><h2>Please enter a function name</h2></li>';
         pagination.classList.add("hidden");
         return;
     }
 
     // TODO: Fix modal resizing issue...
-    // display loading indicator...
+    // display loading indicator
     function_list.innerHTML = '<li class="list-item-empty"><div class="lds-dual-ring"></div></li>';
 
     let functions;
@@ -310,7 +310,7 @@ async function search_function() {
     }
 
     if (functions.data.length == 0) {
-        function_list.innerHTML = '<li class="list-item-empty"><h2>No functions found...</h2></li>';
+        function_list.innerHTML = '<li class="list-item-empty"><h2>No functions found</h2></li>';
         return;
     }
 

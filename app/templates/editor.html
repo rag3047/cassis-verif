@@ -67,7 +67,7 @@
                         <div>
                             <h4 class="hint-heading">{{ selected_proof.name }}</h4>
                             <p class="hint-text {{ 'italic' if hint is none }}">
-                                {{ hint.hint | default('No description available...', true) }}
+                                {{ hint.hint | default('No description available', true) }}
                             </p>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                             </a>
                         </div>
                         <div class="callgraph-error {{ 'hidden' if graphs.callgraph and graphs.inverse_callgraph }}">
-                            <h4 class="alert danger margin-0">Callgraphs currently unavailable...</h4>
+                            <h4 class="alert danger margin-0">Callgraphs currently unavailable</h4>
                         </div>
                     </div>
                     <div class="hint-section context-container">
@@ -129,7 +129,7 @@
                                     {% endif %}
                                 </li>
                                 {% endfor %} {% else %}
-                                <li class="table-item-empty"><h4>The selected function has no params...</h4></li>
+                                <li class="table-item-empty"><h4>The selected function has no params</h4></li>
                                 {% endif %}
                             </ul>
                             <h4>External References</h4>
@@ -152,12 +152,12 @@
                                     {% endif %}
                                 </li>
                                 {% endfor %} {% else %}
-                                <li class="table-item-empty"><h4>The selected function has no external references...</h4></li>
+                                <li class="table-item-empty"><h4>The selected function has no external references</h4></li>
                                 {% endif %}
                             </ul>
                         </div>
                         <div class="context-error {{ 'hidden' if params }}">
-                            <h4 class="alert danger margin-0">Function context currently unavailable...</h4>
+                            <h4 class="alert danger margin-0">Function context currently unavailable</h4>
                         </div>
                     </div>
                     <div class="hint-section loop-unwinding">
@@ -181,7 +181,7 @@
                                 <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
                             </li>
                             {% endfor %} {% else %}
-                            <li class="table-item-empty"><h4>There are no loops in the selected proof...</h4></li>
+                            <li class="table-item-empty"><h4>There are no loops in the selected proof</h4></li>
                             {% endif %}
                         </ul>
                     </div>
