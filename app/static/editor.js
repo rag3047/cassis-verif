@@ -452,7 +452,7 @@ async function on_proof_selected() {
     }
 }
 
-const hints = hints_container.querySelector(".hints");
+const hint_section = hints_container.querySelector(".hints");
 const loading_indicator = hints_container.querySelector(".loading");
 const loading_text = loading_indicator.querySelector(".status");
 const no_proof_selected = hints_container.querySelector(".no-proof-selected");
@@ -462,7 +462,7 @@ async function refresh_hints(hard_refresh = false) {
     const proof_name = sel_proof.value;
     const file_name = sel_proof.querySelector(`option[value="${proof_name}"]`).dataset.src;
 
-    hints.classList.add("hidden");
+    hint_section.classList.add("hidden");
     loading_indicator.classList.remove("hidden");
     no_proof_selected.classList.add("hidden");
     refresh_hints_button.removeAttribute("disabled");
@@ -499,6 +499,7 @@ async function refresh_hints(hard_refresh = false) {
             fetch(`api/v1/doxygen/callgraphs?${get_params}`),
             fetch(`api/v1/doxygen/function-params?${get_params}`),
             fetch(`api/v1/doxygen/function-refs?${get_params}`),
+            fetch(`api/v1/hints/function/${proof_name}`),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
@@ -506,16 +507,41 @@ async function refresh_hints(hard_refresh = false) {
         return;
     }
 
-    const [loops, graphs, params, refs] = responses;
+    const [loops, graphs, params, refs, hints] = responses;
 
     await refresh_loop_unwinding(loops);
     await refresh_callgraphs(graphs);
     await refresh_function_param_table(params);
     await refresh_ref_table(refs);
+    await refresh_ai_hints(hints);
 
-    hints.classList.remove("hidden");
+    hint_section.classList.remove("hidden");
     loading_indicator.classList.add("hidden");
     loading_text.textContent = "";
+}
+
+const hints_heading = hints_container.querySelector(".hint-heading");
+const hints_text = hints_container.querySelector(".hint-text");
+
+async function refresh_ai_hints(hints) {
+    if (hints.error_code) {
+        hints_text.textContent = hints.detail;
+        hints_text.classList.add("alert", "danger", "margin-0");
+        return;
+    } else {
+        hints_text.classList.remove("alert", "danger", "margin-0");
+    }
+
+    const proof_name = sel_proof.value;
+    hints_heading.textContent = proof_name;
+
+    if (hints.hint) {
+        hints_text.textContent = hints.hint;
+        hints_text.classList.remove("italic");
+    } else {
+        hints_text.textContent = "No description available...";
+        hints_text.classList.add("italic");
+    }
 }
 
 const context = hints_container.querySelector(".context");

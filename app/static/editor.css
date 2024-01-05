@@ -253,7 +253,6 @@
     display: flex;
     align-items: center;
     overflow: auto hidden;
-    /* height: 2.5rem; */
     height: 3rem;
 }
 
@@ -313,4 +312,16 @@
 .tab.unsaved > span::after {
     content: "*";
     color: white;
+}
+
+.hint-heading {
+    margin-bottom: 0.5rem;
+}
+
+.hint-text {
+    margin-top: 0.5rem;
+}
+
+.italic {
+    font-style: italic;
 }

@@ -4,7 +4,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
+from contextlib import suppress
 
+from .controllers.hints import get_function_hint
 from .controllers.doxygen import (
     get_doxygen_docs,
     get_doxygen_callgraph_image_paths,
@@ -18,6 +20,7 @@ from .controllers.cbmc import (
     get_cbmc_verification_task_status,
     get_cbmc_proof_loop_info,
 )
+
 
 log = getLogger(__name__)
 
@@ -103,50 +106,43 @@ async def editor(request: Request) -> HTMLResponse:
     callgraphs = None
     params = []
     references = []
+    hint = None
 
     if proof_name:
-        try:
+        with suppress(HTTPException):
             selected_proof = await get_cbmc_proof(proof_name)
-        except HTTPException as e:
-            log.warn(f"Exception ignored: {e}")
 
-        try:
+        with suppress(HTTPException):
             loops = await get_cbmc_proof_loop_info(proof_name)
-        except HTTPException as e:
-            log.warn(f"Exception ignored: {e}")
+
+        with suppress(HTTPException):
+            hint = await get_function_hint(proof_name)
 
     if proof_name and file_name and file_name != "None":
-        try:
+        with suppress(HTTPException):
             callgraphs = await get_doxygen_callgraph_image_paths(
                 file_name.split("/")[-1],
                 proof_name,
             )
-        except HTTPException as e:
-            log.warn(f"Exception ignored: {e}")
 
-        try:
+        with suppress(HTTPException):
             params = await get_doxygen_function_params(
                 file_name.split("/")[-1],
                 proof_name,
             )
 
-        except HTTPException as e:
-            log.warn(f"Exception ignored: {e}")
-
-        try:
+        with suppress(HTTPException):
             references = await get_doxygen_function_refs(
                 file_name.split("/")[-1],
                 proof_name,
             )
-
-        except HTTPException as e:
-            log.warn(f"Exception ignored: {e}")
 
     log.debug(f"{selected_proof=}")
     log.debug(f"{loops=}")
     log.debug(f"{callgraphs=}")
     log.debug(f"{params=}")
     log.debug(f"{references=}")
+    log.debug(f"{hint=}")
 
     context = {
         "request": request,
@@ -156,6 +152,7 @@ async def editor(request: Request) -> HTMLResponse:
         "graphs": callgraphs,
         "params": params,
         "references": references,
+        "hint": hint,
     }
 
     return templates.TemplateResponse("editor.html", context)

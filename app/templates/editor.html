@@ -36,7 +36,7 @@
                     <div class="tab-fill"></div>
                 </div>
                 <div id="editor"></div>
-                <div class="notification">TEST</div>
+                <div class="notification"></div>
             </div>
             <div class="hints-container">
                 <div class="toolbar">
@@ -64,9 +64,12 @@
                         <p>
                             The following paragraph contains an AI generated description of the selected function.
                         </p>
-                        <p>
-                            TODO
-                        </p>
+                        <div>
+                            <h4 class="hint-heading">{{ selected_proof.name }}</h4>
+                            <p class="hint-text {{ 'italic' if hint is none }}">
+                                {{ hint.hint | default('No description available...', true) }}
+                            </p>
+                        </div>
                     </div>
                     <div class="hint-section callgraphs-container">
                         <h2>Callgraphs</h2>
@@ -209,7 +212,7 @@
             <p class="modal-text code"><span id="entry-path" data-path=""></span></p>
             <form class="modal-form" method="dialog">
                 <div class="modal-buttons">
-                    <button class="button danger" onclick="delete_entry()">Confirm</button>
+                    <button class="button danger" onclick="delete_entry()">Delete</button>
                     <button class="button" autofocus>Cancel</button>
                 </div>
             </form>
