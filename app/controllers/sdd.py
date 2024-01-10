@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile, HTTPException, status
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from ..utils.errors import HTTPError
+from ..utils.models import HTTPError
 
 log = getLogger(__name__)
 

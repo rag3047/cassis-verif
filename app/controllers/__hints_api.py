@@ -1,11 +1,8 @@
 from logging import getLogger
-from pydantic import BaseModel
+
+from ..utils.models import Hint
 
 log = getLogger(__name__)
-
-
-class Hint(BaseModel):
-    hint: str | None
 
 
 async def get_function_hint(function_name: str) -> Hint:
@@ -13,7 +10,8 @@ async def get_function_hint(function_name: str) -> Hint:
     log.info(f"Getting hint for function {function_name}")
 
     # TODO
-    raise NotImplementedError()
+    log.warn("Hints API currently not implemented")
+    return Hint(hint=None)
 
 
 async def get_struct_hints(struct_name: str) -> Hint:
@@ -21,7 +19,8 @@ async def get_struct_hints(struct_name: str) -> Hint:
     log.info(f"Getting hints for struct {struct_name}")
 
     # TODO
-    raise NotImplementedError()
+    log.warn("Hints API currently not implemented")
+    return Hint(hint=None)
 
 
 async def get_macro_hint(macro_name: str) -> Hint:
@@ -29,4 +28,5 @@ async def get_macro_hint(macro_name: str) -> Hint:
     log.info(f"Getting hint for macro {macro_name}")
 
     # TODO
-    raise NotImplementedError()
+    log.warn("Hints API currently not implemented")
+    return Hint(hint=None)

@@ -66,7 +66,7 @@
                         </p>
                         <div>
                             <h4 class="hint-heading">{{ selected_proof.name }}</h4>
-                            <p class="hint-text {{ 'italic' if hint is none }}">
+                            <p class="hint-text {{ 'italic' if hint.hint is none }}">
                                 {{ hint.hint | default('No description available', true) }}
                             </p>
                         </div>
@@ -112,20 +112,28 @@
                             <h4>Function Params</h4>
                             <ul class="table param-table">
                                 <li class="table-item">
-                                    <h4 class="width-50">Name</h4>
-                                    <h4 class="width-50">Type</h4>
+                                    <div class="width-50"><h4>Name</h4></div>
+                                    <div class="width-40"><h4>Type</h4></div>
+                                    <div class="info-icon-col"></div>
                                 </li>
                                 {% if params | length > 0 %} {% for param in params %}
                                 <li class="table-item">
                                     <div class="width-50">{{ param.name }}</div>
                                     {% if param.ref %}
-                                    <div class="width-50">
+                                    <div class="width-40">
                                         <a target="_blank" href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html">
                                             {{ param.type }}
                                         </a>
                                     </div>
                                     {% else %}
-                                    <div class="width-50">{{ param.type }}</div>
+                                    <div class="width-40">{{ param.type }}</div>
+                                    {% endif %}
+                                    {% if param.hint %}
+                                    <!-- TODO: Add data-title -->
+                                    <!-- TODO: vertically center info icon -->
+                                    <div class="info-icon-col icon" data-tooltip="{{ param.hint | default('', true) }}">&#x1F6C8;</div>
+                                    {% else %}
+                                    <div class="info-icon-col"></div>
                                     {% endif %}
                                 </li>
                                 {% endfor %} {% else %}
@@ -135,20 +143,28 @@
                             <h4>External References</h4>
                             <ul class="table ref-table">
                                 <li class="table-item">
-                                    <h4 class="width-50">Name</h4>
-                                    <h4 class="width-50">Type</h4>
+                                    <div class="width-50"><h4>Name</h4></div>
+                                    <div class="width-40"><h4>Type</h4></div>
+                                    <div class="info-icon-col"></div>
                                 </li>
                                 {% if references | length > 0 %} {% for ref in references %}
                                 <li class="table-item">
                                     <div class="width-50">{{ ref.name }}</div>
-                                    {% if ref.ref %}
-                                    <div class="width-50">
-                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ ref.ref | urlencode }}.html">
-                                            {{ ref.type }}
+                                    {% if ref.href %}
+                                    <div class="width-40">
+                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ ref.href | urlencode }}">
+                                            {{ ref.type if ref.kind == 'variable' else ref.kind }}
                                         </a>
                                     </div>
                                     {% else %}
-                                    <div class="width-50">{{ ref.type }}</div>
+                                    <div class="width-40">{{ ref.type if ref.kind == 'variable' else ref.kind }}</div>
+                                    {% endif %}
+                                    {% if ref.hint %}
+                                    <!-- TODO: Add data-title -->
+                                    <!-- TODO: vertically center info icon -->
+                                    <div class="info-icon-col icon" data-tooltip="{{ ref.hint | default('', true) }}">&#x1F6C8;</div>
+                                    {% else %}
+                                    <div class="info-icon-col"></div>
                                     {% endif %}
                                 </li>
                                 {% endfor %} {% else %}
@@ -228,6 +244,11 @@
                     <button class="button">Cancel</button>
                 </div>
             </form>
+        </dialog>
+
+        <dialog id="hint-tooltip" class="tooltip">
+            <h4></h4>
+            <p></p>
         </dialog>
 
         <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>

@@ -2,7 +2,8 @@ import json
 
 from logging import getLogger
 from pathlib import Path
-from pydantic import BaseModel
+
+from ..utils.models import Hint
 
 log = getLogger(__name__)
 
@@ -17,10 +18,6 @@ for file in hint_files:
     HINTS_DB[type] = json.loads(file.read_text())
 
 log.info(f"Loaded hints for the following types: {list(HINTS_DB.keys())}")
-
-
-class Hint(BaseModel):
-    hint: str | None
 
 
 async def get_hints(proof_name: str) -> list[Hint]:
@@ -49,11 +46,13 @@ async def get_struct_hints(struct_name: str) -> Hint:
     """Get the hints for a struct"""
     log.info(f"Getting hints for struct {struct_name}")
 
-    # TODO
+    struct_hints = HINTS_DB.get("struct", {})
+    return Hint(hint=struct_hints.get(struct_name, None))
 
 
 async def get_macro_hint(macro_name: str) -> Hint:
     """Get the hint for a macro"""
     log.info(f"Getting hint for macro {macro_name}")
 
-    # TODO
+    macro_hints = HINTS_DB.get("macro", {})
+    return Hint(hint=macro_hints.get(macro_name, None))

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, HTTPException, status
 from pathlib import Path
 from logging import getLogger
 
-from ..utils.errors import HTTPError
+from ..utils.models import HTTPError
 
 log = getLogger(__name__)
 

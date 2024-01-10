@@ -16,7 +16,7 @@ from datetime import datetime
 from io import TextIOWrapper
 
 
-from ..utils.errors import HTTPError
+from ..utils.models import HTTPError
 
 log = getLogger(__name__)
 

@@ -325,3 +325,36 @@
 .italic {
     font-style: italic;
 }
+
+.info-icon-col {
+    width: 1rem;
+    text-overflow: initial !important;
+    text-align: center;
+}
+
+.icon {
+    cursor: pointer;
+}
+
+/* TODO: add icon hove effect? */
+
+.tooltip {
+    background-color: var(--bg-dark);
+    color: white;
+    border: 2px solid var(--border-color);
+    overflow-wrap: anywhere;
+    max-width: 250px;
+    pointer-events: none;
+
+    & > * {
+        margin: 0;
+    }
+
+    & > h4 {
+        margin-bottom: 0.5rem;
+    }
+}
+
+.tooltip:focus-visible {
+    outline: none;
+}

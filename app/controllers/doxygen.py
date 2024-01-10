@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from lxml import etree as ET
 from lxml.etree import _Element as Element, _ElementTree as ElementTree
 
-from ..utils.errors import HTTPError
+from ..utils.models import HTTPError
+from .hints import get_hints
 
 log = getLogger(__name__)
 
@@ -136,7 +137,8 @@ async def get_doxygen_callgraph_image_paths(
 class DoxygenFunctionParam(BaseModel):
     type: str
     name: str
-    ref: str | None
+    ref: str | None = None
+    hint: str | None = None
 
 
 @router.get(
@@ -157,13 +159,22 @@ async def get_doxygen_function_params(
     index = _get_doxygen_index()
     file_ref, func_ref = _get_file_and_func_refs(index, file_name, func_name)
 
-    return _get_function_params(file_ref, func_ref)
+    function_params = _get_function_params(file_ref, func_ref)
+
+    for param in function_params:
+        if param.type.startswith("struct"):
+            struct_name = param.type.split(" ")[1]
+            param.hint = (await get_hints("struct", struct_name)).hint
+
+    return function_params
 
 
 class DoxygenFunctionRef(BaseModel):
     name: str
-    type: str
+    kind: str
     href: str
+    type: str | None = None
+    hint: str | None = None
 
 
 @router.get(
@@ -184,13 +195,15 @@ async def get_doxygen_function_refs(
     index = _get_doxygen_index()
     file_ref, func_ref = _get_file_and_func_refs(index, file_name, func_name)
 
+    function_refs = _get_function_refs(file_ref, func_ref)
+
+    # get hints for function refs (if any)
+    for ref in function_refs:
+        ref.hint = (await get_hints(ref.kind, ref.name)).hint
+
     return sorted(
-        [
-            ref
-            for ref in _get_function_refs(index, file_ref, func_ref)
-            if "::" not in ref.name
-        ],
-        key=lambda x: x.type,
+        [ref for ref in function_refs if "::" not in ref.name],
+        key=lambda x: x.kind,
     )
 
 
@@ -271,8 +284,8 @@ def _get_file_and_func_refs(
 
     func = functions[0]
 
-    file_ref: str = file.attrib["refid"]
-    func_ref: str = func.attrib["refid"]
+    file_ref: str = file.get("refid")
+    func_ref: str = func.get("refid")
 
     log.debug(f"{file_ref=}")
     log.debug(f"{func_ref=}")
@@ -310,7 +323,7 @@ def _get_function_params(file_ref: str, func_ref: str) -> list[DoxygenFunctionPa
         param_ref_id: str | None = None
 
         if len(param_ref) > 0:
-            param_ref_id = param_ref[0].attrib.get("refid", None)
+            param_ref_id = param_ref[0].get("refid", None)
             param_type_str += param_ref[0].text + param_ref[0].tail
 
         params.append(
@@ -325,7 +338,6 @@ def _get_function_params(file_ref: str, func_ref: str) -> list[DoxygenFunctionPa
 
 
 def _get_function_refs(
-    index: ElementTree,
     file_ref: str,
     func_ref: str,
 ) -> list[DoxygenFunctionRef]:
@@ -351,16 +363,32 @@ def _get_function_refs(
 
     for ref in ref_list:
         ref_name: str = ref.text
-        href: str = ref.attrib["refid"].split("_1")[0] + ".html"
+        file, id = ref.get("refid").split("_1")
 
-        xpath = f"./compound/member[@refid='{ref.attrib['refid']}']/@kind"
-        ref_type: str = index.xpath(xpath)[0]
+        if file == file_ref:
+            # lookup ref in current file (file_data)
+            xpath = f"./compounddef/sectiondef/memberdef[@id='{ref.get('refid')}']"
+            data: Element = file_data.xpath(xpath)[0]
+            ref_kind: str = data.get("kind")
+            ref_type: str = data.findtext("type")
+
+        else:
+            # lookup ref in other file
+            xpath = f"./compounddef/sectiondef/memberdef[@id='{ref.get('refid')}']"
+            file_path = Path(DOXYGEN_DIR) / "xml" / f"{file}.xml"
+            other_file_data: ElementTree = ET.parse(file_path)
+            data: Element = other_file_data.xpath(xpath)[0]
+            ref_kind: str = data.get("kind")
+            ref_type: str = data.findtext("type")
+
+        ref_kind = "macro" if ref_kind == "define" else ref_kind
 
         refs.append(
             DoxygenFunctionRef(
                 name=ref_name,
+                kind=ref_kind,
                 type=ref_type,
-                href=href,
+                href=file + ".html#" + id,
             )
         )
 

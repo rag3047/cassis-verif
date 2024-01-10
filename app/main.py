@@ -8,7 +8,7 @@ from fastapi.exceptions import HTTPException
 from pathlib import Path
 from importlib import import_module
 
-from .utils.errors import HTTPError
+from .utils.models import HTTPError
 from .pages import pages
 
 

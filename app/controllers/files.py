@@ -9,7 +9,7 @@ from logging import getLogger
 from pathlib import Path
 from shutil import rmtree
 
-from ..utils.errors import HTTPError
+from ..utils.models import HTTPError
 
 log = getLogger(__name__)
 

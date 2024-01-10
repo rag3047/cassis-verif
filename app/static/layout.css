@@ -250,12 +250,7 @@ body {
     & h4 {
         margin: 0;
         text-align: center;
-        padding: 0.5rem;
-        border-right: 2px solid var(--border-color);
-    }
-
-    & h4:last-child {
-        border-right: none;
+        font-family: var(--font);
     }
 }
 

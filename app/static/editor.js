@@ -560,8 +560,9 @@ async function refresh_function_param_table(params) {
 
     let html = `
         <li class="table-item">
-            <h4 class="width-50">Name</h4>
-            <h4 class="width-50">Type</h4>
+            <div class="width-50"><h4>Name</h4></div>
+            <div class="width-40"><h4>Type</h4></div>
+            <div class="info-icon-col"></div>
         </li>\n`;
 
     for (const param of params) {
@@ -571,10 +572,16 @@ async function refresh_function_param_table(params) {
             type = `<a target="_blank" href="doxygen?href=${encodeURIComponent(param.ref)}.html">${param.type}</a>`;
         }
 
+        let hint = `<div class="info-icon-col"></div>`;
+        if (param.hint) {
+            hint = `<div class="info-icon-col icon" data-tooltip="${param.hint}">&#x1F6C8;</div>`;
+        }
+
         html += `
             <li class="table-item">
                 <div class="width-50">${param.name}</div>
-                <div class="width-50">${type}</div>
+                <div class="width-40">${type}</div>
+                ${hint}
             </li>\n`;
     }
 
@@ -595,15 +602,28 @@ async function refresh_ref_table(refs) {
 
     let html = `
         <li class="table-item">
-            <h4 class="width-50">Name</h4>
-            <h4 class="width-50">Type</h4>
+            <div class="width-50"><h4>Name</h4></div>
+            <div class="width-40"><h4>Type</h4></div>
+            <div class="info-icon-col"></div>
         </li>\n`;
 
     for (const ref of refs) {
+        let type = ref.kind == "variable" ? ref.type : ref.kind;
+
+        if (ref.href) {
+            type = `<a target="_blank" href="doxygen?href=${encodeURIComponent(ref.href)}">${type}</a>`;
+        }
+
+        let hint = `<div class="info-icon-col"></div>`;
+        if (ref.hint) {
+            hint = `<div class="info-icon-col icon" data-tooltip="${ref.hint}">&#x1F6C8;</div>`;
+        }
+
         html += `
             <li class="table-item">
                 <div class="width-50">${ref.name}</div>
-                <div class="width-50">${ref.type}</div>
+                <div class="width-40">${type}</div>
+                ${hint}
             </li>\n`;
     }
 
@@ -675,11 +695,33 @@ async function refresh_loop_unwinding(loops) {
     loop_table.innerHTML = html;
 }
 
+const hint_tooltip = document.querySelector("#hint-tooltip");
+const hint_tooltip_text = hint_tooltip.querySelector("p");
+const hint_tooltip_title = hint_tooltip.querySelector("h4");
+
 document.addEventListener("DOMContentLoaded", function () {
     NiceSelect.bind(document.querySelector("select"), {
         searchable: true,
         searchtext: "Search",
         placeholder: "Select a proof",
+    });
+
+    document.querySelectorAll(".icon").forEach((icon) => {
+        icon.addEventListener("mouseenter", (event) => {
+            hint_tooltip_title.textContent = event.target.dataset.title;
+            hint_tooltip_text.textContent = event.target.dataset.tooltip;
+
+            // we need to show the tooltip before we can get offsetWidth/offsetHeight
+            hint_tooltip.show();
+
+            const rect = event.target.getBoundingClientRect();
+            hint_tooltip.style.left = rect.left - hint_tooltip.offsetWidth + "px";
+            hint_tooltip.style.top = rect.top - hint_tooltip.offsetHeight + "px";
+        });
+
+        icon.addEventListener("mouseout", () => {
+            hint_tooltip.close();
+        });
     });
 });
 

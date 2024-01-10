@@ -11,3 +11,7 @@ class HTTPError(BaseModel):
         description="Error message",
         frozen=True,
     )
+
+
+class Hint(BaseModel):
+    hint: str | None
