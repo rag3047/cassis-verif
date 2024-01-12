@@ -38,10 +38,19 @@
                 <div id="editor"></div>
                 <div class="notification"></div>
             </div>
-            <div class="hints-container">
+            <div class="hints-container" onscroll="close_hint_tooltip()">
                 <div class="toolbar">
-                    <button id="btn-toggle-editor" class="button" onclick="toggle_editor()">Hide Editor</button>
-                    <button id="btn-refresh-hints" class="button" {{ 'disabled' if selected_proof is none }} onclick="refresh_hints(true)">Refresh</button>
+                    <button 
+                        id="btn-toggle-editor" 
+                        class="button" 
+                        onclick="toggle_editor()"
+                    >Hide Editor</button>
+                    <button 
+                        id="btn-refresh-hints" 
+                        class="button" 
+                        {{ 'disabled' if selected_proof is none }} 
+                        onclick="refresh_hints(true)"
+                    >Refresh</button>
                     <select id="sel-proof" class="sel-proof" onchange="on_proof_selected()">
                         {% for proof in proofs %}
                             <option 
@@ -52,7 +61,11 @@
                             >{{ proof.name }}</option>
                         {% endfor %}
                     </select>
-                    <button id="btn-open-proof-source" class="button" onclick="show_proof_source_file()">Open Source File</button>
+                    <button 
+                        id="btn-open-proof-source" 
+                        class="button" 
+                        onclick="show_proof_source_file()"
+                    >Open Source File</button>
                 </div>
                 <div class="loading hidden">
                     <div class="lds-dual-ring"></div>
@@ -74,25 +87,46 @@
                     <div class="hint-section callgraphs-container">
                         <h2>Callgraphs</h2>
                         <p>
-                            The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> of the selected function.
-                            Use this information to determine possible argument values and global state, but also to decide which functions
-                            to stub out.<br/>
-                            <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces">
-                                More info on Stubs
-                            </a>
+                            The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> 
+                            of the selected function. Use this information to determine possible argument values 
+                            and global state, but also to decide which functions to stub out.<br/>
+                            <a 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces"
+                            >More info on Stubs</a>
                             <br/>
-                            <a id="doxygen-link" target="_blank" rel="noreferrer" href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}">
-                                Full Doxygen Docs
-                            </a>
+                            <a 
+                                id="doxygen-link" 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}"
+                            >Full Doxygen Docs</a>
                         </p>
                         <div class="callgraphs {{ 'hidden' if not graphs.callgraph or not graphs.inverse_callgraph }}">
                             <h4>Callgraph</h4>
-                            <a class="cgraph-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}">
-                                <img class="cgraph" src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" alt="Callgraph" />
+                            <a 
+                                class="cgraph-link" 
+                                target="_blank" 
+                                href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}"
+                            >
+                                <img 
+                                    class="cgraph" 
+                                    src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" 
+                                    alt="Callgraph"
+                                />
                             </a>
                             <h4>Inverse Callgraph</h4>
-                            <a class="icgraph-link" target="_blank" href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}">
-                                <img class="icgraph" src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" alt="Inverse Callgraph" />
+                            <a 
+                                class="icgraph-link" 
+                                target="_blank" 
+                                href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}"
+                            >
+                                <img 
+                                    class="icgraph" 
+                                    src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" 
+                                    alt="Inverse Callgraph"
+                                />
                             </a>
                         </div>
                         <div class="callgraph-error {{ 'hidden' if graphs.callgraph and graphs.inverse_callgraph }}">
@@ -105,9 +139,11 @@
                             <p>
                                 The following two tables contain information about function arguments and referenced global state.
                                 Use this information to determine what values must be defined in the proof harness.<br/>
-                                <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html">
-                                    More info on writing Proof Harnesses
-                                </a>
+                                <a 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html"
+                                >More info on writing Proof Harnesses</a>
                             </p>
                             <h4>Function Params</h4>
                             <ul class="table param-table">
@@ -121,17 +157,22 @@
                                     <div class="width-50">{{ param.name }}</div>
                                     {% if param.ref %}
                                     <div class="width-40">
-                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html">
-                                            {{ param.type }}
-                                        </a>
+                                        <a 
+                                            target="_blank" 
+                                            href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html"
+                                        >{{ param.type }}</a>
                                     </div>
                                     {% else %}
                                     <div class="width-40">{{ param.type }}</div>
                                     {% endif %}
                                     {% if param.hint %}
-                                    <!-- TODO: Add data-title -->
-                                    <!-- TODO: vertically center info icon -->
-                                    <div class="info-icon-col icon" data-tooltip="{{ param.hint | default('', true) }}">&#x1F6C8;</div>
+                                    <div 
+                                        class="info-icon-col icon" 
+                                        data-title="{{ param.type.split(' ')[1] }}" 
+                                        data-tooltip="{{ param.hint | default('', true) }}"
+                                        onmouseenter="show_hint_tooltip(event)"
+                                        onmouseout="close_hint_tooltip()"
+                                    >&#x1F6C8;</div>
                                     {% else %}
                                     <div class="info-icon-col"></div>
                                     {% endif %}
@@ -160,9 +201,13 @@
                                     <div class="width-40">{{ ref.type if ref.kind == 'variable' else ref.kind }}</div>
                                     {% endif %}
                                     {% if ref.hint %}
-                                    <!-- TODO: Add data-title -->
-                                    <!-- TODO: vertically center info icon -->
-                                    <div class="info-icon-col icon" data-tooltip="{{ ref.hint | default('', true) }}">&#x1F6C8;</div>
+                                    <div 
+                                        class="info-icon-col icon" 
+                                        data-title="{{ ref.name }}" 
+                                        data-tooltip="{{ ref.hint | default('', true) }}"
+                                        onmouseenter="show_hint_tooltip(event)"
+                                        onmouseout="close_hint_tooltip()"
+                                    >&#x1F6C8;</div>
                                     {% else %}
                                     <div class="info-icon-col"></div>
                                     {% endif %}
@@ -181,9 +226,11 @@
                         <p>
                             The following Loops were detected in the execution trace of the selected proof.
                             A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
-                            <a target="_blank" rel="noreferrer" href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html">
-                                More info on Loop Unwinding
-                            </a>
+                            <a 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html"
+                            >More info on Loop Unwinding</a>
                         </p>
                         <ul class="table width-80">
                             <li class="table-item">
@@ -203,7 +250,9 @@
                     </div>
                 </div>
                 <div>
-                    <h3 class="no-proof-selected {{ 'hidden' if selected_proof is not none }}">Please select a proof to display hints</h3>
+                    <h3 
+                        class="no-proof-selected {{ 'hidden' if selected_proof is not none }}"
+                    >Please select a proof to display hints</h3>
                 </div>
             </div>
         </div>

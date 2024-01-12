@@ -6,7 +6,7 @@ services:
             context: .
             args:
                 - PRESET=cassis
-        image: cassis-verif:0.0.1-dev
+        image: cassis-verif:1.0.0
         env_file:
             - .env
         ports:

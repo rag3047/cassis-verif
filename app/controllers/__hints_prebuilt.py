@@ -20,20 +20,6 @@ for file in hint_files:
 log.info(f"Loaded hints for the following types: {list(HINTS_DB.keys())}")
 
 
-async def get_hints(proof_name: str) -> list[Hint]:
-    """Get all hints for a proof"""
-    log.info(f"Getting hints for proof {proof_name}")
-
-    hints = []
-    function_hints = HINTS_DB.get("function", {})
-    hints.append(Hint(hint=function_hints.get(proof_name, None)))
-
-    # TODO: get params & refs from doxygen
-    #       based on type (function, struct, macro), get hints from HINTS_DB
-
-    return hints
-
-
 async def get_function_hint(function_name: str) -> Hint:
     """Get the hint for a function"""
     log.info(f"Getting hint for function {function_name}")

@@ -125,9 +125,17 @@ function add_editor_tab(path, uri) {
     }
 
     tab_list.innerHTML =
-        `<div class="tab active" data-uri="${uri}" data-path="${path}" onclick="on_editor_tab_clicked(event)">
+        `<div 
+            class="tab active" 
+            data-uri="${uri}" 
+            data-path="${path}" 
+            onclick="on_editor_tab_clicked(event)"
+        >
             <span>${path.split("/").pop()}</span>
-            <button class="close" onclick="close_editor_tab(event)">X</button>
+            <button 
+                class="close" 
+                onclick="close_editor_tab(event)"
+            >X</button>
         </div>\n` + tab_list.innerHTML;
 }
 
@@ -544,6 +552,26 @@ async function refresh_ai_hints(hints) {
     }
 }
 
+const hint_tooltip = document.querySelector("#hint-tooltip");
+const hint_tooltip_text = hint_tooltip.querySelector("p");
+const hint_tooltip_title = hint_tooltip.querySelector("h4");
+
+function show_hint_tooltip(event) {
+    hint_tooltip_title.textContent = event.target.dataset.title;
+    hint_tooltip_text.textContent = event.target.dataset.tooltip;
+
+    // we need to show the tooltip before we can get offsetWidth/offsetHeight
+    hint_tooltip.show();
+
+    const rect = event.target.getBoundingClientRect();
+    hint_tooltip.style.left = rect.left - hint_tooltip.offsetWidth + "px";
+    hint_tooltip.style.top = rect.top - hint_tooltip.offsetHeight + "px";
+}
+
+function close_hint_tooltip() {
+    hint_tooltip.close();
+}
+
 const context = hints_container.querySelector(".context");
 const param_table = context.querySelector(".param-table");
 const context_error = hints_container.querySelector(".context-error");
@@ -569,12 +597,24 @@ async function refresh_function_param_table(params) {
         let type = param.type;
 
         if (param.ref) {
-            type = `<a target="_blank" href="doxygen?href=${encodeURIComponent(param.ref)}.html">${param.type}</a>`;
+            type = `
+                <a 
+                    target="_blank" 
+                    href="doxygen?href=${encodeURIComponent(param.ref)}.html"
+                >${param.type}</a>`;
         }
 
         let hint = `<div class="info-icon-col"></div>`;
         if (param.hint) {
-            hint = `<div class="info-icon-col icon" data-tooltip="${param.hint}">&#x1F6C8;</div>`;
+            const title = param.type.split(" ")[1];
+            hint = `
+                <div 
+                    class="info-icon-col icon" 
+                    data-title="${title}" 
+                    data-tooltip="${param.hint}"
+                    onmouseenter="show_hint_tooltip(event)"
+                    onmouseout="close_hint_tooltip()"
+                >&#x1F6C8;</div>`;
         }
 
         html += `
@@ -611,12 +651,23 @@ async function refresh_ref_table(refs) {
         let type = ref.kind == "variable" ? ref.type : ref.kind;
 
         if (ref.href) {
-            type = `<a target="_blank" href="doxygen?href=${encodeURIComponent(ref.href)}">${type}</a>`;
+            type = `
+                <a 
+                    target="_blank" 
+                    href="doxygen?href=${encodeURIComponent(ref.href)}"
+                >${type}</a>`;
         }
 
         let hint = `<div class="info-icon-col"></div>`;
         if (ref.hint) {
-            hint = `<div class="info-icon-col icon" data-tooltip="${ref.hint}">&#x1F6C8;</div>`;
+            hint = `
+                <div 
+                    class="info-icon-col icon" 
+                    data-title="${ref.name}" 
+                    data-tooltip="${ref.hint}"
+                    onmouseenter="show_hint_tooltip(event)"
+                    onmouseout="close_hint_tooltip()"
+                >&#x1F6C8;</div>`;
         }
 
         html += `
@@ -695,33 +746,11 @@ async function refresh_loop_unwinding(loops) {
     loop_table.innerHTML = html;
 }
 
-const hint_tooltip = document.querySelector("#hint-tooltip");
-const hint_tooltip_text = hint_tooltip.querySelector("p");
-const hint_tooltip_title = hint_tooltip.querySelector("h4");
-
 document.addEventListener("DOMContentLoaded", function () {
     NiceSelect.bind(document.querySelector("select"), {
         searchable: true,
         searchtext: "Search",
         placeholder: "Select a proof",
-    });
-
-    document.querySelectorAll(".icon").forEach((icon) => {
-        icon.addEventListener("mouseenter", (event) => {
-            hint_tooltip_title.textContent = event.target.dataset.title;
-            hint_tooltip_text.textContent = event.target.dataset.tooltip;
-
-            // we need to show the tooltip before we can get offsetWidth/offsetHeight
-            hint_tooltip.show();
-
-            const rect = event.target.getBoundingClientRect();
-            hint_tooltip.style.left = rect.left - hint_tooltip.offsetWidth + "px";
-            hint_tooltip.style.top = rect.top - hint_tooltip.offsetHeight + "px";
-        });
-
-        icon.addEventListener("mouseout", () => {
-            hint_tooltip.close();
-        });
     });
 });
 

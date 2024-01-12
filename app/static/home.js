@@ -295,7 +295,6 @@ async function search_function() {
         return;
     }
 
-    // TODO: Fix modal resizing issue...
     // display loading indicator
     function_list.innerHTML = '<li class="list-item-empty"><div class="lds-dual-ring"></div></li>';
 
@@ -311,6 +310,7 @@ async function search_function() {
 
     if (functions.data.length == 0) {
         function_list.innerHTML = '<li class="list-item-empty"><h2>No functions found</h2></li>';
+        pagination.classList.add("hidden");
         return;
     }
 
@@ -323,9 +323,12 @@ async function search_function() {
                         <span>${func.file}</span>
                     </div>
                     <div>
-                        <button class="btn-add-proof button success" data-name="${func.name}" data-file="${func.file}" onclick="add_proof(event)">
-                            Add
-                        </button>
+                        <button 
+                            class="btn-add-proof button success" 
+                            data-name="${func.name}" 
+                            data-file="${func.file}" 
+                            onclick="add_proof(event)"
+                        >Add</button>
                     </div>
                 </li>`
         )

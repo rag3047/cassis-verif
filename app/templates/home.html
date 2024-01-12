@@ -24,10 +24,27 @@
             <div class="proofs">
                 <div class="toolbar">
                     <button class="button" onclick="show_add_proof_modal()">Add Proof</button>
-                    <button id="btn-run-proofs" class="button" {{ 'disabled' if task_status.is_running }} onclick="run_all_proofs()">Run Proofs</button>
-                    <button id="btn-cancel-proofs" class="button disabled" {{ 'disabled' if not task_status.is_running }} onclick="cancel_proof_run()">Cancel Proof Run</button>
-                    <button class="button" onclick="show_update_git_config_modal()">Edit Git Config</button>
-                    <button id="btn-git-pull" class="button" onclick="pull_sources()">Pull Sources</button>
+                    <button 
+                        id="btn-run-proofs" 
+                        class="button" 
+                        {{ 'disabled' if task_status.is_running }} 
+                        onclick="run_all_proofs()"
+                    >Run Proofs</button>
+                    <button 
+                        id="btn-cancel-proofs" 
+                        class="button disabled" 
+                        {{ 'disabled' if not task_status.is_running }} 
+                        onclick="cancel_proof_run()"
+                    >Cancel Proof Run</button>
+                    <button 
+                        class="button" 
+                        onclick="show_update_git_config_modal()"
+                    >Edit Git Config</button>
+                    <button 
+                        id="btn-git-pull" 
+                        class="button" 
+                        onclick="pull_sources()"
+                    >Pull Sources</button>
                 </div>
                 <ul class="list">
                     {% if proofs | length > 0 %} {% for proof in proofs %}
@@ -37,10 +54,15 @@
                             <span>{{ proof.src | default('N/A', true) }}</span>
                         </div>
                         <div>
-                            <a class="button" href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}">Edit</a>
-                            <button class="btn-delete-proof button danger" data-name="{{ proof.name }}" onclick="show_confirm_delete_proof_modal(event)">
-                                Delete
-                            </button>
+                            <a 
+                                class="button" 
+                                href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}"
+                            >Edit</a>
+                            <button 
+                                class="btn-delete-proof button danger" 
+                                data-name="{{ proof.name }}" 
+                                onclick="show_confirm_delete_proof_modal(event)"
+                            >Delete</button>
                         </div>
                     </li>
                     {% endfor %} {% else %}
@@ -51,7 +73,11 @@
             <div class="task">
                 <div class="task-overview">
                     <div class="task-status">
-                        <h1>Current Task: <span id="current-task-status">{{ "Running" if task_status.is_running else "None" }}</span></h1>
+                        <h1>Current Task: 
+                            <span id="current-task-status">
+                                {{ "Running" if task_status.is_running else "None" }}
+                            </span>
+                        </h1>
                         <div class="task-status-spinner center-block {{ 'hidden' if not task_status.is_running }}">
                             <div class="lds-dual-ring"></div>
                         </div>
@@ -67,10 +93,20 @@
                             {% if results | length > 0 %} {% for result in results %}
                             <li class="table-item">
                                 <span class="width-25">{{ result.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                <a class="width-50" href="{{ url_for('results') }}?version={{ result.name }}">{{ result.name }}</a>
+                                <a 
+                                    class="width-50" 
+                                    href="{{ url_for('results') }}?version={{ result.name }}"
+                                >{{ result.name }}</a>
                                 <span class="width-25">
-                                    <a class="button" href="{{ url_for('download_cbmc_verification_task_result') }}?version={{ result.name }}">Download</a>
-                                    <button class="button danger delete" data-name="{{ result.name }}" onclick="show_confirm_delete_result_modal(event)">Delete</button>
+                                    <a 
+                                        class="button" 
+                                        href="{{ url_for('download_cbmc_verification_task_result') }}?version={{ result.name }}"
+                                    >Download</a>
+                                    <button 
+                                        class="button danger delete" 
+                                        data-name="{{ result.name }}" 
+                                        onclick="show_confirm_delete_result_modal(event)"
+                                    >Delete</button>
                                 </span>
                             </li>
                             {% endfor %} {% else %}

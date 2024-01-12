@@ -62,6 +62,7 @@
 #modal-add-proof {
     & .list {
         margin-bottom: 1rem;
+        height: 450px;
     }
 
     & .list-item {
