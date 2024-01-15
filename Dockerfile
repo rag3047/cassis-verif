@@ -27,9 +27,8 @@ RUN mkdir src \
     && wget https://sourceforge.net/projects/expat/files/expat/2.1.0/expat-2.1.0-RENAMED-VULNERABLE-PLEASE-USE-2.3.0-INSTEAD.tar.gz -q \
     && mv expat-2.1.0-RENAMED-VULNERABLE-PLEASE-USE-2.3.0-INSTEAD.tar.gz expat-2.1.0.tar.gz \
     && cd .. \
-    && ../source-builder/sb-set-builder --prefix=/rtems/4.11 4.11/rtems-sparc --log=/dev/stdout \
-    && mkdir /output \
-    && mv /rtems/4.11 /output/rtems
+    && mkdir -p /output/rtems \
+    && ../source-builder/sb-set-builder --prefix=/output/rtems --with-rtems 4.11/rtems-sparc
 
 # Select preset based on build arg
 FROM ${PRESET} AS preset

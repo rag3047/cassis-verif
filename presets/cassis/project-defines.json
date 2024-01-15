@@ -1,11 +1,10 @@
 {
     "includes": [
         "$(SRCDIR)/src/include",
-        "$(PRESET_DIR)/includes/include",
-        "$(PRESET_DIR)/includes/leon3/lib/include",
-        "$(PRESET_DIR)/includes/leon3/lib/include/grlib",
-        "$(PRESET_DIR)/includes/7.5.0/include",
-        "$(PRESET_DIR)/includes/sparc-rtems4.11/leon3/lib/include"
+        "$(PRESET_DIR)/rtems/sparc-rtems4.11/include",
+        "$(PRESET_DIR)/rtems/sparc-rtems4.11/leon3/lib/include",
+        "$(PRESET_DIR)/rtems/sparc-rtems4.11/leon3/lib/include/bsp",
+        "$(PRESET_DIR)/rtems/lib/gcc/sparc-rtems4.11/4.9.3/include"
     ],
     "defines": ["__rtems__"],
     "env": [

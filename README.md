@@ -15,7 +15,7 @@ This repo contians the source code of *Cassis-Verif*, a tool developed as part o
 ## How To Build & Run
 
 Building the project requires a Docker installation.  
-Note: When using the `cassis` preset, the first build might take well above 10 minutes! Also, the `cassis` build stage generates a lot of log output which might be clipped at some point. To see full log output while building, [disable buildkit](https://stackoverflow.com/questions/65819424/is-there-a-way-to-increase-the-log-size-in-docker-when-building-a-container).
+Note: When using the `cassis` preset, the first build might take approximately 15 minutes to build the RTEMS sources!
 
 - Start by cloning this repo and navigate into the project root using your preferred editor.
 - Create a `.env` file in the project root (see `.env.example` for a list of all available env vars).
