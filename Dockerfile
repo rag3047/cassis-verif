@@ -1,8 +1,16 @@
 ARG UBUNTU_VERSION=22.04
 ARG PRESET=default
 
+#--------------------------------------
+# Default Preset
+#--------------------------------------
+
 FROM ubuntu:${UBUNTU_VERSION} AS default
 RUN mkdir /output
+
+#--------------------------------------
+# Cassis Preset
+#--------------------------------------
 
 FROM ubuntu:16.04 AS cassis
 
@@ -29,6 +37,10 @@ RUN mkdir src \
     && cd .. \
     && mkdir -p /output/rtems \
     && ../source-builder/sb-set-builder --prefix=/output/rtems --with-rtems 4.11/rtems-sparc
+
+#--------------------------------------
+# Workbench
+#--------------------------------------
 
 # Select preset based on build arg
 FROM ${PRESET} AS preset
