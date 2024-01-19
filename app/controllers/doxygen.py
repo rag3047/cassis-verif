@@ -78,8 +78,8 @@ async def get_doxygen_docs(file_path: str) -> FileResponse:
 
 class DoxygenCallgraphs(BaseModel):
     file_href: Path
-    callgraph: Path
-    inverse_callgraph: Path
+    callgraph: Path | None
+    inverse_callgraph: Path | None
 
 
 @router.get(
@@ -121,16 +121,21 @@ async def get_doxygen_callgraph_image_paths(
     log.debug(f"{callgraph=!s}")
     log.debug(f"{inverse_callgraph=!s}")
 
-    if not callgraph.exists() or not inverse_callgraph.exists():
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
-            "Callgraph images not found. Try rebuilding the doxygen documentation.",
-        )
+    # if not callgraph.exists() and not inverse_callgraph.exists():
+    #     raise HTTPException(
+    #         status.HTTP_404_NOT_FOUND,
+    #         "Callgraph images not found. Try rebuilding the doxygen documentation.",
+    #     )
+
+    callgraph = callgraph.relative_to(html_dir) if callgraph.exists() else None
+    inverse_callgraph = (
+        inverse_callgraph.relative_to(html_dir) if inverse_callgraph.exists() else None
+    )
 
     return DoxygenCallgraphs(
         file_href=file_href,
-        callgraph=callgraph.relative_to(html_dir),
-        inverse_callgraph=inverse_callgraph.relative_to(html_dir),
+        callgraph=callgraph,
+        inverse_callgraph=inverse_callgraph,
     )
 
 

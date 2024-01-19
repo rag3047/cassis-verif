@@ -593,6 +593,13 @@ async function refresh_function_param_table(params) {
             <div class="info-icon-col"></div>
         </li>\n`;
 
+    if (params.length == 0) {
+        html += `
+            <li class="table-item-empty">
+                <h4>The selected function has no params</h4>
+            </li>\n`;
+    }
+
     for (const param of params) {
         let type = param.type;
 
@@ -647,6 +654,13 @@ async function refresh_ref_table(refs) {
             <div class="info-icon-col"></div>
         </li>\n`;
 
+    if (refs.length == 0) {
+        html += `
+            <li class="table-item-empty">
+                <h4>The selected function has no external references</h4>
+            </li>\n`;
+    }
+
     for (const ref of refs) {
         let type = ref.kind == "variable" ? ref.type : ref.kind;
 
@@ -700,12 +714,27 @@ async function refresh_callgraphs(graphs) {
     }
 
     doxygen_link.href = "doxygen?href=" + encodeURIComponent(graphs.file_href);
-
     const prefix = "api/v1/doxygen/docs/";
-    cgraph_link.href = prefix + graphs.callgraph;
-    cgraph.src = prefix + graphs.callgraph;
-    icgraph_link.href = prefix + graphs.inverse_callgraph;
-    icgraph.src = prefix + graphs.inverse_callgraph;
+
+    if (graphs.callgraph) {
+        cgraph_link.classList.remove("hidden");
+        cgraph_link.nextElementSibling.classList.add("hidden");
+        cgraph_link.href = prefix + graphs.callgraph;
+        cgraph.src = prefix + graphs.callgraph;
+    } else {
+        cgraph_link.classList.add("hidden");
+        cgraph_link.nextElementSibling.classList.remove("hidden");
+    }
+
+    if (graphs.inverse_callgraph) {
+        icgraph_link.classList.remove("hidden");
+        icgraph_link.nextElementSibling.classList.add("hidden");
+        icgraph_link.href = prefix + graphs.inverse_callgraph;
+        icgraph.src = prefix + graphs.inverse_callgraph;
+    } else {
+        icgraph_link.classList.add("hidden");
+        icgraph_link.nextElementSibling.classList.remove("hidden");
+    }
 }
 
 const loop_table = hints_container.querySelector(".loop-unwinding > .table");

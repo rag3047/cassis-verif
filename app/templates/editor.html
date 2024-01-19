@@ -103,10 +103,10 @@
                                 href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}"
                             >Full Doxygen Docs</a>
                         </p>
-                        <div class="callgraphs {{ 'hidden' if not graphs.callgraph or not graphs.inverse_callgraph }}">
+                        <div class="callgraphs {{ 'hidden' if not graphs.callgraph and not graphs.inverse_callgraph }}">
                             <h4>Callgraph</h4>
                             <a 
-                                class="cgraph-link" 
+                                class="cgraph-link {{ 'hidden' if not graphs.callgraph }}" 
                                 target="_blank" 
                                 href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}"
                             >
@@ -116,9 +116,10 @@
                                     alt="Callgraph"
                                 />
                             </a>
+                            <p class="italic {{ 'hidden' if graphs.callgraph }}">Unavailable</p>
                             <h4>Inverse Callgraph</h4>
                             <a 
-                                class="icgraph-link" 
+                                class="icgraph-link {{ 'hidden' if not graphs.inverse_callgraph }}" 
                                 target="_blank" 
                                 href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}"
                             >
@@ -128,14 +129,15 @@
                                     alt="Inverse Callgraph"
                                 />
                             </a>
+                            <p class="italic {{ 'hidden' if graphs.inverse_callgraph}}">Unavailable</p>
                         </div>
-                        <div class="callgraph-error {{ 'hidden' if graphs.callgraph and graphs.inverse_callgraph }}">
+                        <div class="callgraph-error {{ 'hidden' if graphs.callgraph or graphs.inverse_callgraph }}">
                             <h4 class="alert danger margin-0">Callgraphs currently unavailable</h4>
                         </div>
                     </div>
                     <div class="hint-section context-container">
                         <h2>Function Context</h2>
-                        <div class="context {{ 'hidden' if not params }}">
+                        <div class="context {{ 'hidden' if not params and not references }}">
                             <p>
                                 The following two tables contain information about function arguments and referenced global state.
                                 Use this information to determine what values must be defined in the proof harness.<br/>
@@ -217,7 +219,7 @@
                                 {% endif %}
                             </ul>
                         </div>
-                        <div class="context-error {{ 'hidden' if params }}">
+                        <div class="context-error {{ 'hidden' if params or references }}">
                             <h4 class="alert danger margin-0">Function context currently unavailable</h4>
                         </div>
                     </div>
