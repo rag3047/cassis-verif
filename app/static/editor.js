@@ -28,13 +28,6 @@ require(["vs/editor/editor.main"], async function () {
         automaticLayout: true,
     });
 
-    editor.onKeyDown(async (event) => {
-        if (event.ctrlKey && event.code == "KeyS") {
-            event.preventDefault();
-            await save_file();
-        }
-    });
-
     editor.onDidChangeModelContent(function (event) {
         unsaved_changes.add(editor.getModel().uri.toString());
         document.querySelector(".tab.active").classList.add("unsaved");
@@ -45,9 +38,27 @@ require(["vs/editor/editor.main"], async function () {
     }
 });
 
+window.addEventListener("keydown", async (event) => {
+    if (event.ctrlKey && event.code == "KeyS") {
+        event.preventDefault();
+        await save_file();
+    }
+
+    if (event.ctrlKey && event.code == "KeyF") {
+        event.preventDefault();
+        editor.trigger("ctrl+f", "actions.find");
+    }
+});
+
 async function on_file_selected(path) {
+    // store current view state (e.g. scroll position)
+    let current_model_uri = editor.getModel().uri.toString();
+    const current_view_state = editor.saveViewState();
+    sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+
     const uri = "api/v1/files/" + encodeURIComponent(path);
     let model = monaco.editor.getModel(uri);
+    let view_state = null;
 
     if (!model) {
         const code = await fetch(uri).then((response) => response.text());
@@ -60,9 +71,13 @@ async function on_file_selected(path) {
     } else {
         // select existing tab
         select_editor_tab_by_uri(uri);
+
+        // restore view state
+        view_state = JSON.parse(sessionStorage.getItem(uri));
     }
 
     editor.setModel(model);
+    if (view_state) editor.restoreViewState(view_state);
 }
 
 const notification = document.querySelector(".notification");
@@ -176,10 +191,16 @@ async function close_editor_tab(event) {
 
 // TODO: add context menu to save file
 async function on_editor_tab_clicked(event) {
+    const current_model_uri = editor.getModel().uri.toString();
+    const current_view_state = editor.saveViewState();
+    sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+
     const uri = event.target.dataset.uri;
     const path = event.target.dataset.path;
     const model = monaco.editor.getModel(uri);
+    const view_state = JSON.parse(sessionStorage.getItem(uri));
     editor.setModel(model);
+    editor.restoreViewState(view_state);
     select_editor_tab_by_uri(uri);
     select_tree_node_by_path(path);
 }
