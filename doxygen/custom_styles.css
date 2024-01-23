@@ -15,3 +15,24 @@ html {
 }
 
 /* TODO: Restyle Doxygen Docs to match app style */
+#titlearea {
+    display: none;
+}
+
+#main-menu li:last-child {
+    float: left !important;
+    margin-left: 1rem;
+}
+
+#doc-content {
+    max-height: calc(100vh - 36px);
+    overflow: scroll;
+}
+
+#side-nav {
+    height: calc(100% - 36px) !important;
+}
+
+#nav-tree {
+    height: 100% !important;
+}

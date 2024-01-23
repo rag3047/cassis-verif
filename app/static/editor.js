@@ -177,6 +177,7 @@ async function close_editor_tab(event) {
 
     const model = monaco.editor.getModel(uri);
     model.dispose();
+    sessionStorage.removeItem(uri);
 
     if (tab.classList.contains("active")) {
         const tab_to_select = tab.previousElementSibling ?? tab.nextElementSibling;
@@ -191,9 +192,13 @@ async function close_editor_tab(event) {
 
 // TODO: add context menu to save file
 async function on_editor_tab_clicked(event) {
-    const current_model_uri = editor.getModel().uri.toString();
-    const current_view_state = editor.saveViewState();
-    sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+    const current_model = editor.getModel();
+    // model might be null if editor tab was closed -> model disposed!
+    if (current_model) {
+        const current_model_uri = editor.getModel().uri.toString();
+        const current_view_state = editor.saveViewState();
+        sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+    }
 
     const uri = event.target.dataset.uri;
     const path = event.target.dataset.path;

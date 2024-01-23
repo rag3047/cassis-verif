@@ -447,19 +447,21 @@ async def delete_cbmc_verification_task_results(version: UUID4) -> None:
     version_str = str(version).lower()
     log.debug(f"{version_str=}")
 
-    if CBMC_PROOFS_TASK is not None:
+    runs = await get_cbmc_verification_task_result_list()
+
+    if not any(run.name == version_str for run in runs):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Version not found: {version_str}",
+        )
+
+    if runs[0].name == version_str and CBMC_PROOFS_TASK is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "Cannot delete results while verification task is running.",
+            "Cannot delete result of currently running verification task.",
         )
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs/{version_str}")
-
-    if not path.exists():
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, f"Version not found: {version_str}"
-        )
-
     rmtree(path)
 
 
