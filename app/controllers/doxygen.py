@@ -324,7 +324,7 @@ def _get_function_params(file_ref: str, func_ref: str) -> list[DoxygenFunctionPa
         param_name: str = param.xpath("declname/text()")[0]
         param_ref: list[Element] = param_type.xpath("ref")
 
-        param_type_str: str = param_type.text
+        param_type_str: str = param_type.text or ""
         param_ref_id: str | None = None
 
         if len(param_ref) > 0:
