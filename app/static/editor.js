@@ -775,7 +775,7 @@ async function refresh_loop_unwinding(loops) {
     if (loops.error_code) {
         html += `
             <li class="table-item-empty danger">
-                <h4>Filed to load table</h4>
+                <h4>Failed to load table</h4>
                 <p>Error: ${loops.detail}</p>
             </li>\n`;
 
