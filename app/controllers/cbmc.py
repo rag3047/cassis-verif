@@ -8,7 +8,7 @@ from websockets.exceptions import ConnectionClosedOK
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, UUID4
 from pathlib import Path
-from shutil import rmtree, make_archive
+from shutil import rmtree, make_archive, copytree
 from cbmc_starter_kit import setup_proof
 from asyncio import sleep
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE, DEVNULL
@@ -21,6 +21,7 @@ log = getLogger(__name__)
 
 DATA_DIR = getenv("DATA_DIR")
 PROOF_ROOT = getenv("PROOF_ROOT")
+CBMC_ROOT = getenv("CBMC_ROOT")
 
 CBMC_PROOFS_TASK: Process | None = None
 CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
@@ -504,6 +505,44 @@ async def download_cbmc_verification_task_result(
 
 
 # ------------------------------------------------------------
+# Download Data
+# ------------------------------------------------------------
+
+
+@router.get("/download")
+async def download_all_cbmc_files(
+    tasks: BackgroundTasks,
+    format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
+) -> None:
+    """Download all CBMC files as an archive."""
+    log.info("Download all CBMC files")
+
+    path = Path(CBMC_ROOT)
+
+    path = copytree(
+        path,
+        "/tmp/cbmc_data",
+        # ignore output directory
+        ignore=lambda path, names: names if "/output" in path else [],
+    )
+
+    abs_file_path = make_archive(
+        "cbmc_data",  # archive file name
+        format,
+        path,  # root directory to archive
+    )
+
+    tasks.add_task(_cleanup_tmp_dir)
+    # delete archive file after download
+    tasks.add_task(_cleanup_archive_file, abs_file_path)
+
+    return FileResponse(
+        abs_file_path,
+        filename=Path(abs_file_path).name,
+    )
+
+
+# ------------------------------------------------------------
 # Utils
 # ------------------------------------------------------------
 
@@ -535,6 +574,12 @@ def _cleanup_archive_file(abs_file_path: str) -> None:
     """Delete archive file."""
     log.debug(f"Cleanup archive file after download: {abs_file_path}")
     remove(abs_file_path)
+
+
+def _cleanup_tmp_dir() -> None:
+    """Delete tmp directory content."""
+    log.debug(f"Cleanup tmp directory after download")
+    rmtree("/tmp/cbmc_data")
 
 
 def _load_proof_data(proof_dir: Path) -> CBMCProof:
