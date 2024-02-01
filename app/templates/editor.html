@@ -1,309 +1,300 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>Editor | Cassis-Verif</title>
-        <meta name="description" content="" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
-        <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
-    </head>
-    <body>
-        <header class="header">
-            <h1>Cassis-Verif</h1>
-            <nav>
-                <a href="{{ url_for('home') }}">Home</a>
-                <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
-                <a href="{{ url_for('doxygen') }}">Doxygen</a>
-            </nav>
-        </header>
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
 
-        <main class="content">
-            <!-- TODO: Use SplitJS -->
-            <aside id="dir-tree">
-                <!-- TODO: 2 Tabs (Files & Git) -->
-                <div class="loading">
-                    <div class="lds-dual-ring"></div>
+{% block pre_layout %}
+<script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
+{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
+{% endblock %}
+
+{% block content %}
+<main class="content">
+    <!-- TODO: Use SplitJS -->
+    <aside id="dir-tree">
+        <!-- TODO: 2 Tabs (Files & Git) -->
+        <div class="loading">
+            <div class="lds-dual-ring"></div>
+        </div>
+    </aside>
+    <div class="editor-container">
+        <div class="tab-list">
+            <div class="tab-fill"></div>
+        </div>
+        <div id="editor"></div>
+        <div class="notification"></div>
+    </div>
+    <div class="hints-container" onscroll="close_hint_tooltip()">
+        <div class="toolbar">
+            <button 
+                id="btn-toggle-editor" 
+                class="button" 
+                onclick="toggle_editor()"
+            >Hide Editor</button>
+            <button 
+                id="btn-refresh-hints" 
+                class="button" 
+                {{ 'disabled' if selected_proof is none }} 
+                onclick="refresh_hints(true)"
+            >Refresh</button>
+            <select id="sel-proof" class="sel-proof" onchange="on_proof_selected()">
+                {% for proof in proofs %}
+                    <option 
+                        value="{{ proof.name }}"
+                        data-src="{{ proof.src }}"
+                        data-harness="{{ proof.harness }}"
+                        {{ 'selected' if proof.name == selected_proof.name }}
+                    >{{ proof.name }}</option>
+                {% endfor %}
+            </select>
+            <button 
+                id="btn-open-proof-source" 
+                class="button" 
+                onclick="show_proof_source_file()"
+            >Open Source File</button>
+        </div>
+        <div class="loading hidden">
+            <div class="lds-dual-ring"></div>
+            <p class="status"></p>
+        </div>
+        <div class="hints {{ 'hidden' if selected_proof is none }}">
+            <div class="hint-section ai">
+                <h2>Description</h2>
+                <p>
+                    The following paragraph contains an AI generated description of the selected function.
+                </p>
+                <div>
+                    <h4 class="hint-heading">{{ selected_proof.name }}</h4>
+                    <p class="hint-text {{ 'italic' if hint.hint is none }}">
+                        {{ hint.hint | default('No description available', true) }}
+                    </p>
                 </div>
-            </aside>
-            <div class="editor-container">
-                <div class="tab-list">
-                    <div class="tab-fill"></div>
-                </div>
-                <div id="editor"></div>
-                <div class="notification"></div>
             </div>
-            <div class="hints-container" onscroll="close_hint_tooltip()">
-                <div class="toolbar">
-                    <button 
-                        id="btn-toggle-editor" 
-                        class="button" 
-                        onclick="toggle_editor()"
-                    >Hide Editor</button>
-                    <button 
-                        id="btn-refresh-hints" 
-                        class="button" 
-                        {{ 'disabled' if selected_proof is none }} 
-                        onclick="refresh_hints(true)"
-                    >Refresh</button>
-                    <select id="sel-proof" class="sel-proof" onchange="on_proof_selected()">
-                        {% for proof in proofs %}
-                            <option 
-                                value="{{ proof.name }}"
-                                data-src="{{ proof.src }}"
-                                data-harness="{{ proof.harness }}"
-                                {{ 'selected' if proof.name == selected_proof.name }}
-                            >{{ proof.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button 
-                        id="btn-open-proof-source" 
-                        class="button" 
-                        onclick="show_proof_source_file()"
-                    >Open Source File</button>
+            <div class="hint-section callgraphs-container">
+                <h2>Callgraphs</h2>
+                <p>
+                    The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> 
+                    of the selected function. Use this information to determine possible argument values 
+                    and global state, but also to decide which functions to stub out.<br/>
+                    <a 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces"
+                    >More info on Stubs</a>
+                    <br/>
+                    <a 
+                        id="doxygen-link" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}"
+                    >Full Doxygen Docs</a>
+                </p>
+                <div class="callgraphs {{ 'hidden' if not graphs.callgraph and not graphs.inverse_callgraph }}">
+                    <h4>Callgraph</h4>
+                    <a 
+                        class="cgraph-link {{ 'hidden' if not graphs.callgraph }}" 
+                        target="_blank" 
+                        href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}"
+                    >
+                        <img 
+                            class="cgraph" 
+                            src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" 
+                            alt="Callgraph"
+                        />
+                    </a>
+                    <p class="italic {{ 'hidden' if graphs.callgraph }}">Unavailable</p>
+                    <h4>Inverse Callgraph</h4>
+                    <a 
+                        class="icgraph-link {{ 'hidden' if not graphs.inverse_callgraph }}" 
+                        target="_blank" 
+                        href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}"
+                    >
+                        <img 
+                            class="icgraph" 
+                            src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" 
+                            alt="Inverse Callgraph"
+                        />
+                    </a>
+                    <p class="italic {{ 'hidden' if graphs.inverse_callgraph}}">Unavailable</p>
                 </div>
-                <div class="loading hidden">
-                    <div class="lds-dual-ring"></div>
-                    <p class="status"></p>
+                <div class="callgraph-error {{ 'hidden' if graphs.callgraph or graphs.inverse_callgraph }}">
+                    <h4 class="alert danger margin-0">Callgraphs currently unavailable</h4>
                 </div>
-                <div class="hints {{ 'hidden' if selected_proof is none }}">
-                    <div class="hint-section ai">
-                        <h2>Description</h2>
-                        <p>
-                            The following paragraph contains an AI generated description of the selected function.
-                        </p>
-                        <div>
-                            <h4 class="hint-heading">{{ selected_proof.name }}</h4>
-                            <p class="hint-text {{ 'italic' if hint.hint is none }}">
-                                {{ hint.hint | default('No description available', true) }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="hint-section callgraphs-container">
-                        <h2>Callgraphs</h2>
-                        <p>
-                            The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> 
-                            of the selected function. Use this information to determine possible argument values 
-                            and global state, but also to decide which functions to stub out.<br/>
-                            <a 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html#modeling-interfaces"
-                            >More info on Stubs</a>
-                            <br/>
-                            <a 
-                                id="doxygen-link" 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                href="{{ url_for('doxygen') }}?href={{ graphs.file_href | urlencode }}"
-                            >Full Doxygen Docs</a>
-                        </p>
-                        <div class="callgraphs {{ 'hidden' if not graphs.callgraph and not graphs.inverse_callgraph }}">
-                            <h4>Callgraph</h4>
-                            <a 
-                                class="cgraph-link {{ 'hidden' if not graphs.callgraph }}" 
-                                target="_blank" 
-                                href="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}"
-                            >
-                                <img 
-                                    class="cgraph" 
-                                    src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" 
-                                    alt="Callgraph"
-                                />
-                            </a>
-                            <p class="italic {{ 'hidden' if graphs.callgraph }}">Unavailable</p>
-                            <h4>Inverse Callgraph</h4>
-                            <a 
-                                class="icgraph-link {{ 'hidden' if not graphs.inverse_callgraph }}" 
-                                target="_blank" 
-                                href="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}"
-                            >
-                                <img 
-                                    class="icgraph" 
-                                    src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" 
-                                    alt="Inverse Callgraph"
-                                />
-                            </a>
-                            <p class="italic {{ 'hidden' if graphs.inverse_callgraph}}">Unavailable</p>
-                        </div>
-                        <div class="callgraph-error {{ 'hidden' if graphs.callgraph or graphs.inverse_callgraph }}">
-                            <h4 class="alert danger margin-0">Callgraphs currently unavailable</h4>
-                        </div>
-                    </div>
-                    <div class="hint-section context-container">
-                        <h2>Function Context</h2>
-                        <div class="context {{ 'hidden' if not params and not references }}">
-                            <p>
-                                The following two tables contain information about function arguments and referenced global state.
-                                Use this information to determine what values must be defined in the proof harness.<br/>
+            </div>
+            <div class="hint-section context-container">
+                <h2>Function Context</h2>
+                <div class="context {{ 'hidden' if not params and not references }}">
+                    <p>
+                        The following two tables contain information about function arguments and referenced global state.
+                        Use this information to determine what values must be defined in the proof harness.<br/>
+                        <a 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html"
+                        >More info on writing Proof Harnesses</a>
+                    </p>
+                    <h4>Function Params</h4>
+                    <ul class="table param-table">
+                        <li class="table-item">
+                            <div class="width-50"><h4>Name</h4></div>
+                            <div class="width-40"><h4>Type</h4></div>
+                            <div class="info-icon-col"></div>
+                        </li>
+                        {% if params | length > 0 %} {% for param in params %}
+                        <li class="table-item">
+                            <div class="width-50">{{ param.name }}</div>
+                            {% if param.ref %}
+                            <div class="width-40">
                                 <a 
                                     target="_blank" 
-                                    rel="noreferrer" 
-                                    href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html"
-                                >More info on writing Proof Harnesses</a>
-                            </p>
-                            <h4>Function Params</h4>
-                            <ul class="table param-table">
-                                <li class="table-item">
-                                    <div class="width-50"><h4>Name</h4></div>
-                                    <div class="width-40"><h4>Type</h4></div>
-                                    <div class="info-icon-col"></div>
-                                </li>
-                                {% if params | length > 0 %} {% for param in params %}
-                                <li class="table-item">
-                                    <div class="width-50">{{ param.name }}</div>
-                                    {% if param.ref %}
-                                    <div class="width-40">
-                                        <a 
-                                            target="_blank" 
-                                            href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html"
-                                        >{{ param.type }}</a>
-                                    </div>
-                                    {% else %}
-                                    <div class="width-40">{{ param.type }}</div>
-                                    {% endif %}
-                                    {% if param.hint %}
-                                    <div 
-                                        class="info-icon-col icon" 
-                                        data-title="{{ param.type.split(' ')[1] }}" 
-                                        data-tooltip="{{ param.hint | default('', true) }}"
-                                        onmouseenter="show_hint_tooltip(event)"
-                                        onmouseout="close_hint_tooltip()"
-                                    >&#x1F6C8;</div>
-                                    {% else %}
-                                    <div class="info-icon-col"></div>
-                                    {% endif %}
-                                </li>
-                                {% endfor %} {% else %}
-                                <li class="table-item-empty"><h4>The selected function has no params</h4></li>
-                                {% endif %}
-                            </ul>
-                            <h4>External References</h4>
-                            <ul class="table ref-table">
-                                <li class="table-item">
-                                    <div class="width-50"><h4>Name</h4></div>
-                                    <div class="width-40"><h4>Type</h4></div>
-                                    <div class="info-icon-col"></div>
-                                </li>
-                                {% if references | length > 0 %} {% for ref in references %}
-                                <li class="table-item">
-                                    <div class="width-50">{{ ref.name }}</div>
-                                    {% if ref.href %}
-                                    <div class="width-40">
-                                        <a target="_blank" href="{{ url_for('doxygen') }}?href={{ ref.href | urlencode }}">
-                                            {{ ref.type if ref.kind == 'variable' else ref.kind }}
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <div class="width-40">{{ ref.type if ref.kind == 'variable' else ref.kind }}</div>
-                                    {% endif %}
-                                    {% if ref.hint %}
-                                    <div 
-                                        class="info-icon-col icon" 
-                                        data-title="{{ ref.name }}" 
-                                        data-tooltip="{{ ref.hint | default('', true) }}"
-                                        onmouseenter="show_hint_tooltip(event)"
-                                        onmouseout="close_hint_tooltip()"
-                                    >&#x1F6C8;</div>
-                                    {% else %}
-                                    <div class="info-icon-col"></div>
-                                    {% endif %}
-                                </li>
-                                {% endfor %} {% else %}
-                                <li class="table-item-empty"><h4>The selected function has no external references</h4></li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                        <div class="context-error {{ 'hidden' if params or references }}">
-                            <h4 class="alert danger margin-0">Function context currently unavailable</h4>
-                        </div>
-                    </div>
-                    <div class="hint-section loop-unwinding">
-                        <h2>Loop Unwinding</h2>
-                        <p>
-                            The following Loops were detected in the execution trace of the selected proof.
-                            A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
-                            <a 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html"
-                            >More info on Loop Unwinding</a>
-                        </p>
-                        <ul class="table width-80">
-                            <li class="table-item">
-                                <h4 class="width-50">Name</h4>
-                                <h4 class="width-50">File:Line</h4>
-                            </li>
-                            {% if loops | length > 0 %} {% for _loop in loops %}
-                            <li class="table-item">
-                                <div class="width-50">{{ _loop.name }}</div>
-                                <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
-                                <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
-                            </li>
-                            {% endfor %} {% else %}
-                            <li class="table-item-empty"><h4>There are no loops in the selected proof</h4></li>
+                                    href="{{ url_for('doxygen') }}?href={{ param.ref | urlencode }}.html"
+                                >{{ param.type }}</a>
+                            </div>
+                            {% else %}
+                            <div class="width-40">{{ param.type }}</div>
                             {% endif %}
-                        </ul>
-                    </div>
+                            {% if param.hint %}
+                            <div 
+                                class="info-icon-col icon" 
+                                data-title="{{ param.type.split(' ')[1] }}" 
+                                data-tooltip="{{ param.hint | default('', true) }}"
+                                onmouseenter="show_hint_tooltip(event)"
+                                onmouseout="close_hint_tooltip()"
+                            >&#x1F6C8;</div>
+                            {% else %}
+                            <div class="info-icon-col"></div>
+                            {% endif %}
+                        </li>
+                        {% endfor %} {% else %}
+                        <li class="table-item-empty"><h4>The selected function has no params</h4></li>
+                        {% endif %}
+                    </ul>
+                    <h4>External References</h4>
+                    <ul class="table ref-table">
+                        <li class="table-item">
+                            <div class="width-50"><h4>Name</h4></div>
+                            <div class="width-40"><h4>Type</h4></div>
+                            <div class="info-icon-col"></div>
+                        </li>
+                        {% if references | length > 0 %} {% for ref in references %}
+                        <li class="table-item">
+                            <div class="width-50">{{ ref.name }}</div>
+                            {% if ref.href %}
+                            <div class="width-40">
+                                <a target="_blank" href="{{ url_for('doxygen') }}?href={{ ref.href | urlencode }}">
+                                    {{ ref.type if ref.kind == 'variable' else ref.kind }}
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="width-40">{{ ref.type if ref.kind == 'variable' else ref.kind }}</div>
+                            {% endif %}
+                            {% if ref.hint %}
+                            <div 
+                                class="info-icon-col icon" 
+                                data-title="{{ ref.name }}" 
+                                data-tooltip="{{ ref.hint | default('', true) }}"
+                                onmouseenter="show_hint_tooltip(event)"
+                                onmouseout="close_hint_tooltip()"
+                            >&#x1F6C8;</div>
+                            {% else %}
+                            <div class="info-icon-col"></div>
+                            {% endif %}
+                        </li>
+                        {% endfor %} {% else %}
+                        <li class="table-item-empty"><h4>The selected function has no external references</h4></li>
+                        {% endif %}
+                    </ul>
                 </div>
-                <div>
-                    <h3 
-                        class="no-proof-selected {{ 'hidden' if selected_proof is not none }}"
-                    >Please select a proof to display hints</h3>
+                <div class="context-error {{ 'hidden' if params or references }}">
+                    <h4 class="alert danger margin-0">Function context currently unavailable</h4>
                 </div>
             </div>
+            <div class="hint-section loop-unwinding">
+                <h2>Loop Unwinding</h2>
+                <p>
+                    The following Loops were detected in the execution trace of the selected proof.
+                    A corresponding <b>UNWINDSET</b> entry should be added to the proof makefile.<br/>
+                    <a 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        href="https://model-checking.github.io/cbmc-training/cbmc/overview/loop-unwinding.html"
+                    >More info on Loop Unwinding</a>
+                </p>
+                <ul class="table width-80">
+                    <li class="table-item">
+                        <h4 class="width-50">Name</h4>
+                        <h4 class="width-50">File:Line</h4>
+                    </li>
+                    {% if loops | length > 0 %} {% for _loop in loops %}
+                    <li class="table-item">
+                        <div class="width-50">{{ _loop.name }}</div>
+                        <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
+                        <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
+                    </li>
+                    {% endfor %} {% else %}
+                    <li class="table-item-empty"><h4>There are no loops in the selected proof</h4></li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
+        <div>
+            <h3 
+                class="no-proof-selected {{ 'hidden' if selected_proof is not none }}"
+            >Please select a proof to display hints</h3>
+        </div>
+    </div>
+</div>
 
-        <dialog id="contextmenu-file" class="contextmenu">
-            <ul>
-                <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete File</button></li>
-            </ul>
-        </dialog>
+<dialog id="contextmenu-file" class="contextmenu">
+    <ul>
+        <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete File</button></li>
+    </ul>
+</dialog>
 
-        <dialog id="contextmenu-dir" class="contextmenu">
-            <ul>
-                <li><button data-path="" onclick="show_create_file_modal(event)">Create File</button></li>
-                <li><button data-path="" onclick="show_create_dir_modal(event)">Create Folder</button></li>
-                <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete Folder</button></li>
-            </ul>
-        </dialog>
+<dialog id="contextmenu-dir" class="contextmenu">
+    <ul>
+        <li><button data-path="" onclick="show_create_file_modal(event)">Create File</button></li>
+        <li><button data-path="" onclick="show_create_dir_modal(event)">Create Folder</button></li>
+        <li><button data-path="" onclick="show_confirm_delete_entry_modal(event)">Delete Folder</button></li>
+    </ul>
+</dialog>
 
-        <dialog id="modal-confirm-delete-entry" class="modal">
-            <h2 class="modal-text">Delete Entry</h2>
-            <p class="modal-text">Are you sure you want to delete the following file/folder?</p>
-            <p class="modal-text code"><span id="entry-path" data-path=""></span></p>
-            <form class="modal-form" method="dialog">
-                <div class="modal-buttons">
-                    <button class="button danger" onclick="delete_entry()">Delete</button>
-                    <button class="button" autofocus>Cancel</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-confirm-delete-entry" class="modal">
+    <h2 class="modal-text">Delete Entry</h2>
+    <p class="modal-text">Are you sure you want to delete the following file/folder?</p>
+    <p class="modal-text code"><span id="entry-path" data-path=""></span></p>
+    <form class="modal-form" method="dialog">
+        <div class="modal-buttons">
+            <button class="button danger" onclick="delete_entry()">Delete</button>
+            <button class="button" autofocus>Cancel</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="modal-create-entry" class="modal">
-            <h2 class="modal-text">Create <span id="entry-type" data-type=""></span></h2>
-            <p class="modal-text alert danger hidden"></p>
-            <form class="modal-form modal-form-25" method="dialog">
-                <input id="entry-name" type="text" placeholder="Name" value="" autofocus />
-                <div class="modal-buttons">
-                    <button class="button success" onclick="create_entry(event)" data-parent="">Create</button>
-                    <button class="button">Cancel</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-create-entry" class="modal">
+    <h2 class="modal-text">Create <span id="entry-type" data-type=""></span></h2>
+    <p class="modal-text alert danger hidden"></p>
+    <form class="modal-form modal-form-25" method="dialog">
+        <input id="entry-name" type="text" placeholder="Name" value="" autofocus />
+        <div class="modal-buttons">
+            <button class="button success" onclick="create_entry(event)" data-parent="">Create</button>
+            <button class="button">Cancel</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="hint-tooltip" class="tooltip">
-            <h4></h4>
-            <p></p>
-        </dialog>
+<dialog id="hint-tooltip" class="tooltip">
+    <h4></h4>
+    <p></p>
+</dialog>
+{% endblock %}
 
-        <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>
-        <script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
-        <script src="{{ url_for('static', path='editor.js') }}"></script>
-    </body>
-</html>
+{% block script %}
+<script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>
+<script src="{{ url_for('static', path='monaco-editor/min/vs/loader.js') }}"></script>
+<script src="{{ url_for('static', path='editor.js') }}"></script>
+{% endblock %}

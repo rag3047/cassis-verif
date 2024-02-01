@@ -25,6 +25,8 @@ CBMC_ROOT = getenv("CBMC_ROOT")
 
 CBMC_PROOFS_TASK: Process | None = None
 CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
+# TODO: this would need to be added to the litani/runs/<guid> directory...
+# CBMC_PROOFS_TASK_TIMESTAMP = Path(PROOF_ROOT) / "output/timestamp.txt"
 
 RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
 RE_LOOP_NAME = re.compile(r"^Loop (?P<name>.+):$", re.MULTILINE)
@@ -48,6 +50,8 @@ class CBMCProofCreate(BaseModel):
 
 class CBMCProof(CBMCProofCreate):
     harness: str
+    # TODO
+    # report_link: Path | None = None
 
 
 @router.get("/proofs")
@@ -265,7 +269,7 @@ class CBMCResult(BaseModel):
 )
 async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     """Execute all CBMC proofs."""
-    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT
+    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT  # , CBMC_PROOFS_TASK_TIMESTAMP
     log.info("Start CBMC verification task")
 
     if CBMC_PROOFS_TASK is not None:
@@ -274,11 +278,19 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
             "Verification Task already running",
         )
 
-    num_proof_runs = len(await get_cbmc_verification_task_result_list())
+    num_proof_runs = _get_cbmc_verification_task_count()
 
+    # create output buffer file
     CBMC_PROOFS_TASK_OUTPUT.parent.mkdir(exist_ok=True)
     CBMC_PROOFS_TASK_OUTPUT.touch(exist_ok=True)
     fd = CBMC_PROOFS_TASK_OUTPUT.open("w")
+
+    # # create creation timestamp file
+    # CBMC_PROOFS_TASK_TIMESTAMP.parent.mkdir(exist_ok=True)
+    # CBMC_PROOFS_TASK_TIMESTAMP.touch(exist_ok=True)
+
+    # with open(CBMC_PROOFS_TASK_TIMESTAMP, "w") as file:
+    #     print(datetime.now().isoformat(), file=file)
 
     # call run-cbmc-proofs.py in subprocess
     CBMC_PROOFS_TASK = await create_subprocess_exec(
@@ -390,6 +402,7 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
     runs = [
         CBMCResult(
             name=run.name,
+            # TODO: get more reliable timestamp (store at creation time)
             start_date=datetime.fromtimestamp(run.stat().st_ctime),
         )
         for run in path.iterdir()
@@ -431,6 +444,9 @@ async def get_cbmc_verification_task_result(
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"File not found: {file_path}")
 
     return FileResponse(path)
+
+    # media_type = "text/html" if path.suffix == ".html" else "text/plain"
+    # return FileResponse(path, media_type=media_type)
 
 
 @router.delete(
@@ -502,6 +518,19 @@ async def download_cbmc_verification_task_result(
         abs_file_path,
         filename=Path(abs_file_path).name,
     )
+
+
+class CBMCResultStats(BaseModel):
+    proof_name: str
+    is_complete: bool = False
+    is_success: bool = False
+    errors: list[str] = []
+    coverage_percentage: float | None = None
+
+
+# TODO
+# async def get_latest_cbmc_verification_task_stats() -> None:
+#     ...
 
 
 # ------------------------------------------------------------
@@ -580,6 +609,19 @@ def _cleanup_tmp_dir() -> None:
     """Delete tmp directory content."""
     log.debug(f"Cleanup tmp directory after download")
     rmtree("/tmp/cbmc_data")
+
+
+def _get_cbmc_verification_task_count() -> int:
+    """Return number of CBMC verification task runs."""
+    log.info("Get number of CBMC task runs")
+
+    path = Path(f"{PROOF_ROOT}/output/litani/runs")
+
+    if not path.exists():
+        return 0
+
+    # count number of directories in output/litani/runs
+    return sum(1 for el in path.iterdir() if el.is_dir())
 
 
 def _load_proof_data(proof_dir: Path) -> CBMCProof:

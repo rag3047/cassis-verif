@@ -35,6 +35,7 @@ async def home(request: Request) -> HTMLResponse:
     log.info("Rendering home page")
 
     context = {
+        "title": "Home | Cassis-Verif",
         "request": request,
         "proofs": await get_cbmc_proofs(),
         "task_status": await get_cbmc_verification_task_status(),
@@ -52,6 +53,7 @@ async def results(request: Request) -> HTMLResponse:
     log.debug(f"{version=}")
 
     context = {
+        "title": "Results | Cassis-Verif",
         "request": request,
         "version": version,
     }
@@ -64,6 +66,7 @@ async def software_design_document(request: Request) -> HTMLResponse:
     log.info("Rendering software design document page")
 
     context = {
+        "title": "SDD | Cassis-Verif",
         "request": request,
     }
     return templates.TemplateResponse("software-design-document.html", context)
@@ -86,6 +89,7 @@ async def doxygen(request: Request) -> HTMLResponse:
     context = {
         "doxygen_available": doxygen_available,
         "href": href,
+        "title": "Doxygen | Cassis-Verif",
         "request": request,
     }
 
@@ -145,6 +149,7 @@ async def editor(request: Request) -> HTMLResponse:
     log.debug(f"{hint=}")
 
     context = {
+        "title": "Editor | Cassis-Verif",
         "request": request,
         "selected_proof": selected_proof,
         "proofs": await get_cbmc_proofs(),
@@ -156,3 +161,15 @@ async def editor(request: Request) -> HTMLResponse:
     }
 
     return templates.TemplateResponse("editor.html", context)
+
+
+@pages.route("/guide")
+async def guide(request: Request) -> HTMLResponse:
+    log.info("Rendering guide page")
+
+    context = {
+        "title": "Guide | Cassis-Verif",
+        "request": request,
+    }
+
+    return templates.TemplateResponse("guide.html", context)

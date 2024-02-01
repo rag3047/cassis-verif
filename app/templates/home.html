@@ -1,192 +1,183 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>Home | Cassis-Verif</title>
-        <meta name="description" content="" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='home.css') }}" />
-    </head>
-    <body>
-        <header class="header">
-            <h1>Cassis-Verif</h1>
-            <nav>
-                <a href="{{ url_for('editor') }}">Editor</a>
-                <a href="{{ url_for('software_design_document') }}">Software-Design-Document</a>
-                <a href="{{ url_for('doxygen') }}">Doxygen</a>
-            </nav>
-        </header>
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
 
-        <main class="content">
-            <div class="proofs">
-                <div class="toolbar">
-                    <button class="button" onclick="show_add_proof_modal()">Add Proof</button>
-                    <button 
-                        id="btn-run-proofs" 
-                        class="button" 
-                        {{ 'disabled' if task_status.is_running }} 
-                        onclick="run_all_proofs()"
-                    >Run Proofs</button>
-                    <button 
-                        id="btn-cancel-proofs" 
-                        class="button disabled" 
-                        {{ 'disabled' if not task_status.is_running }} 
-                        onclick="cancel_proof_run()"
-                    >Cancel Proof Run</button>
-                    <button 
-                        class="button" 
-                        onclick="show_update_git_config_modal()"
-                    >Edit Git Config</button>
-                    <button 
-                        id="btn-git-pull" 
-                        class="button" 
-                        onclick="pull_sources()"
-                    >Pull Sources</button>
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='home.css') }}" />
+{% endblock %}
+
+<!-- prettier-ignore -->
+{% block content %}
+<main class="content">
+    <div class="proofs">
+        <div class="toolbar">
+            <button class="button" onclick="show_add_proof_modal()">Add Proof</button>
+            <button 
+                id="btn-run-proofs" 
+                class="button" 
+                {{ 'disabled' if task_status.is_running }} 
+                onclick="run_all_proofs()"
+            >Run Proofs</button>
+            <button 
+                id="btn-cancel-proofs" 
+                class="button disabled" 
+                {{ 'disabled' if not task_status.is_running }} 
+                onclick="cancel_proof_run()"
+            >Cancel Proof Run</button>
+            <button 
+                class="button" 
+                onclick="show_update_git_config_modal()"
+            >Edit Git Config</button>
+            <button 
+                id="btn-git-pull" 
+                class="button" 
+                onclick="pull_sources()"
+            >Pull Sources</button>
+        </div>
+        <ul class="list">
+            {% if proofs | length > 0 %} {% for proof in proofs %}
+            <li class="list-item">
+                <div>
+                    <h2>{{ proof.name }}</h2>
+                    <span>{{ proof.src | default('N/A', true) }}</span>
                 </div>
-                <ul class="list">
-                    {% if proofs | length > 0 %} {% for proof in proofs %}
-                    <li class="list-item">
-                        <div>
-                            <h2>{{ proof.name }}</h2>
-                            <span>{{ proof.src | default('N/A', true) }}</span>
-                        </div>
-                        <div>
+                <div>
+                    <a 
+                        class="button" 
+                        href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}"
+                    >Edit</a>
+                    <button 
+                        class="btn-delete-proof button danger" 
+                        data-name="{{ proof.name }}" 
+                        onclick="show_confirm_delete_proof_modal(event)"
+                    >Delete</button>
+                </div>
+            </li>
+            {% endfor %} {% else %}
+            <li class="list-item-empty"><h2>There are no proofs to show</h2></li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="task">
+        <div class="task-overview">
+            <div class="task-status">
+                <h1>Current Task: 
+                    <span id="current-task-status">
+                        {{ "Running" if task_status.is_running else "None" }}
+                    </span>
+                </h1>
+                <div class="task-status-spinner center-block {{ 'hidden' if not task_status.is_running }}">
+                    <div class="lds-dual-ring"></div>
+                </div>
+            </div>
+            <div class="task-history">
+                <h1>Job-History</h1>
+                <ul class="table width-80 results-table">
+                    <li class="table-item">
+                        <h4 class="width-25">Start-Time</h4>
+                        <h4 class="width-50">Name</h4>
+                        <h4 class="width-25">Actions</h4>
+                    </li>
+                    {% if results | length > 0 %} {% for result in results %}
+                    <li class="table-item">
+                        <span class="width-25">{{ result.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        <a 
+                            class="width-50" 
+                            href="{{ url_for('results') }}?version={{ result.name }}"
+                        >{{ result.name }}</a>
+                        <span class="width-25">
                             <a 
                                 class="button" 
-                                href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}"
-                            >Edit</a>
+                                href="{{ url_for('download_cbmc_verification_task_result') }}?version={{ result.name }}"
+                            >Download</a>
                             <button 
-                                class="btn-delete-proof button danger" 
-                                data-name="{{ proof.name }}" 
-                                onclick="show_confirm_delete_proof_modal(event)"
+                                class="button danger delete" 
+                                data-name="{{ result.name }}" 
+                                onclick="show_confirm_delete_result_modal(event)"
                             >Delete</button>
-                        </div>
+                        </span>
                     </li>
                     {% endfor %} {% else %}
-                    <li class="list-item-empty"><h2>There are no proofs to show</h2></li>
+                    <li class="table-item-empty"><h2>There are no results to show</h2></li>
                     {% endif %}
                 </ul>
             </div>
-            <div class="task">
-                <div class="task-overview">
-                    <div class="task-status">
-                        <h1>Current Task: 
-                            <span id="current-task-status">
-                                {{ "Running" if task_status.is_running else "None" }}
-                            </span>
-                        </h1>
-                        <div class="task-status-spinner center-block {{ 'hidden' if not task_status.is_running }}">
-                            <div class="lds-dual-ring"></div>
-                        </div>
-                    </div>
-                    <div class="task-history">
-                        <h1>Job-History</h1>
-                        <ul class="table width-80 results-table">
-                            <li class="table-item">
-                                <h4 class="width-25">Start-Time</h4>
-                                <h4 class="width-50">Name</h4>
-                                <h4 class="width-25">Actions</h4>
-                            </li>
-                            {% if results | length > 0 %} {% for result in results %}
-                            <li class="table-item">
-                                <span class="width-25">{{ result.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                <a 
-                                    class="width-50" 
-                                    href="{{ url_for('results') }}?version={{ result.name }}"
-                                >{{ result.name }}</a>
-                                <span class="width-25">
-                                    <a 
-                                        class="button" 
-                                        href="{{ url_for('download_cbmc_verification_task_result') }}?version={{ result.name }}"
-                                    >Download</a>
-                                    <button 
-                                        class="button danger delete" 
-                                        data-name="{{ result.name }}" 
-                                        onclick="show_confirm_delete_result_modal(event)"
-                                    >Delete</button>
-                                </span>
-                            </li>
-                            {% endfor %} {% else %}
-                            <li class="table-item-empty"><h2>There are no results to show</h2></li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-                <textarea class="console" disabled></textarea>
-            </div>
-        </main>
+        </div>
+        <textarea class="console" disabled></textarea>
+    </div>
+</main>
 
-        <dialog id="modal-confirm-delete-proof" class="modal">
-            <h2 class="modal-text">Delete Proof</h2>
-            <p class="modal-text">Are you sure you want to delete the following proof?</p>
-            <p class="modal-text"><b><span id="proof-name" data-name=""></span></b></p>
-            <form class="modal-form" method="dialog">
-                <div class="modal-buttons">
-                    <button class="button danger" onclick="delete_proof()">Delete</button>
-                    <button class="button" autofocus>Cancel</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-confirm-delete-proof" class="modal">
+    <h2 class="modal-text">Delete Proof</h2>
+    <p class="modal-text">Are you sure you want to delete the following proof?</p>
+    <p class="modal-text"><b><span id="proof-name" data-name=""></span></b></p>
+    <form class="modal-form" method="dialog">
+        <div class="modal-buttons">
+            <button class="button danger" onclick="delete_proof()">Delete</button>
+            <button class="button" autofocus>Cancel</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="modal-confirm-delete-result" class="modal">
-            <h2 class="modal-text">Delete Result</h2>
-            <p class="modal-text">Are you sure you want to delete the following result?</p>
-            <p class="modal-text"><b><span id="result-name" data-name=""></span></b></p>
-            <form class="modal-form" method="dialog">
-                <div class="modal-buttons">
-                    <button class="button danger" onclick="delete_result()">Delete</button>
-                    <button class="button" autofocus>Cancel</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-confirm-delete-result" class="modal">
+    <h2 class="modal-text">Delete Result</h2>
+    <p class="modal-text">Are you sure you want to delete the following result?</p>
+    <p class="modal-text"><b><span id="result-name" data-name=""></span></b></p>
+    <form class="modal-form" method="dialog">
+        <div class="modal-buttons">
+            <button class="button danger" onclick="delete_result()">Delete</button>
+            <button class="button" autofocus>Cancel</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="modal-add-proof" class="modal">
-            <h2 class="modal-text">Add Proof</h2>
-            <p class="modal-text alert danger hidden"></p>
-            <form class="modal-form modal-form-33" method="dialog">
-                <input type="search" placeholder="Search" value="" />
-                <ul class="list">
-                    <li class="list-item-empty"><h2>Please enter a function name</h2></li>
-                </ul>
-                <div class="pagination hidden" data-offset="0">
-                    <button class="button">Previous</button>
-                    <button class="button">Next</button>
-                </div>
-                <div class="modal-buttons">
-                    <button class="button">Close</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-add-proof" class="modal">
+    <h2 class="modal-text">Add Proof</h2>
+    <p class="modal-text alert danger hidden"></p>
+    <form class="modal-form modal-form-33" method="dialog">
+        <input type="search" placeholder="Search" value="" />
+        <ul class="list">
+            <li class="list-item-empty"><h2>Please enter a function name</h2></li>
+        </ul>
+        <div class="pagination hidden" data-offset="0">
+            <button class="button">Previous</button>
+            <button class="button">Next</button>
+        </div>
+        <div class="modal-buttons">
+            <button class="button">Close</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="modal-edit-git-config" class="modal">
-            <h2 class="modal-text">Git Config</h2>
-            <p class="modal-text alert danger hidden"></p>
-            <form class="modal-form modal-form-33" method="dialog">
-                <label for="#git-remote">Remote:</label>
-                <input id="git-remote" type="text" value="" />
-                <label for="#git-branch">Branch:</label>
-                <input id="git-branch" type="text" value="" />
-                <label for="#git-user">Username:</label>
-                <input id="git-user" type="text" value="" />
-                <label for="#git-password">Password:</label>
-                <input id="git-password" type="password" value="" />
-                <div class="modal-buttons">
-                    <button class="button success" onclick="update_git_config(event)">Save</button>
-                    <button class="button">Cancel</button>
-                </div>
-            </form>
-        </dialog>
+<dialog id="modal-edit-git-config" class="modal">
+    <h2 class="modal-text">Git Config</h2>
+    <p class="modal-text alert danger hidden"></p>
+    <form class="modal-form modal-form-33" method="dialog">
+        <label for="#git-remote">Remote:</label>
+        <input id="git-remote" type="text" value="" />
+        <label for="#git-branch">Branch:</label>
+        <input id="git-branch" type="text" value="" />
+        <label for="#git-user">Username:</label>
+        <input id="git-user" type="text" value="" />
+        <label for="#git-password">Password:</label>
+        <input id="git-password" type="password" value="" />
+        <div class="modal-buttons">
+            <button class="button success" onclick="update_git_config(event)">Save</button>
+            <button class="button">Cancel</button>
+        </div>
+    </form>
+</dialog>
 
-        <dialog id="modal-git-pull" class="modal">
-            <h2 class="modal-text">Please wait</h2>
-            <p class="modal-text alert danger hidden"></p>
-            <div class="modal-form modal-form-10 spinner"><div class="center-block lds-dual-ring"></div></div>
-            <p class="modal-text status"></p>
-        </dialog>
+<dialog id="modal-git-pull" class="modal">
+    <h2 class="modal-text">Please wait</h2>
+    <p class="modal-text alert danger hidden"></p>
+    <div class="modal-form modal-form-10 spinner"><div class="center-block lds-dual-ring"></div></div>
+    <p class="modal-text status"></p>
+</dialog>
+{% endblock %}
 
-        <script src="{{ url_for('static', path='home.js') }}" async defer></script>
-    </body>
-</html>
+<!-- prettier-ignore -->
+{% block script %}
+<script src="{{ url_for('static', path='home.js') }}" async defer></script>
+{% endblock %}
+
