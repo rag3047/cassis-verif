@@ -19,7 +19,7 @@ window.addEventListener("beforeunload", (event) => {
 let editor = null;
 let selected_file = null;
 
-require.config({ paths: { vs: "static/monaco-editor/min/vs" } });
+require.config({ paths: { vs: `${APP_PATH}static/monaco-editor/min/vs` } });
 require(["vs/editor/editor.main"], async function () {
     editor = monaco.editor.create(document.getElementById("editor"), {
         theme: "vs-dark",
@@ -56,7 +56,7 @@ async function on_file_selected(path) {
     const current_view_state = editor.saveViewState();
     sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
 
-    const uri = "api/v1/files/" + encodeURIComponent(path);
+    const uri = `${APP_PATH}api/v1/files/` + encodeURIComponent(path);
     let model = monaco.editor.getModel(uri);
     let view_state = null;
 
@@ -273,7 +273,7 @@ let tree_view = null;
 
 async function build_directory_tree() {
     const root = new TreeNode("root");
-    const entries = await fetch("api/v1/files").then((res) => res.json());
+    const entries = await fetch(`${APP_PATH}api/v1/files`).then((res) => res.json());
     let selected_path = null;
 
     for (const entry of entries) {
@@ -507,7 +507,7 @@ async function refresh_hints(hard_refresh = false) {
 
         let response;
         try {
-            response = await fetch(`api/v1/doxygen/build`, {
+            response = await fetch(`${APP_PATH}api/v1/doxygen/build`, {
                 method: "POST",
             });
         } catch (err) {
@@ -529,11 +529,11 @@ async function refresh_hints(hard_refresh = false) {
         loading_text.textContent = "Loading hints";
 
         responses = await Promise.all([
-            fetch(`api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
-            fetch(`api/v1/doxygen/callgraphs?${get_params}`),
-            fetch(`api/v1/doxygen/function-params?${get_params}`),
-            fetch(`api/v1/doxygen/function-refs?${get_params}`),
-            fetch(`api/v1/hints/function/${proof_name}`),
+            fetch(`${APP_PATH}api/v1/cbmc/proofs/${proof_name}/loops?rebuild=${hard_refresh}`),
+            fetch(`${APP_PATH}api/v1/doxygen/callgraphs?${get_params}`),
+            fetch(`${APP_PATH}api/v1/doxygen/function-params?${get_params}`),
+            fetch(`${APP_PATH}api/v1/doxygen/function-refs?${get_params}`),
+            fetch(`${APP_PATH}api/v1/hints/function/${proof_name}`),
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);
@@ -740,7 +740,7 @@ async function refresh_callgraphs(graphs) {
     }
 
     doxygen_link.href = "doxygen?href=" + encodeURIComponent(graphs.file_href);
-    const prefix = "api/v1/doxygen/docs/";
+    const prefix = `${APP_PATH}api/v1/doxygen/docs/`;
 
     if (graphs.callgraph) {
         cgraph_link.classList.remove("hidden");
@@ -826,9 +826,12 @@ confirm_delete_entry_modal.addEventListener("close", async () => {
         let response;
 
         try {
-            response = await fetch(`api/v1/files/${encodeURIComponent(confirm_delete_entry_modal.returnValue)}`, {
-                method: "DELETE",
-            });
+            response = await fetch(
+                `${APP_PATH}api/v1/files/${encodeURIComponent(confirm_delete_entry_modal.returnValue)}`,
+                {
+                    method: "DELETE",
+                }
+            );
         } catch (err) {
             console.error(err);
             alert(`Failed to delete file/folder, check console for details.`);
@@ -881,7 +884,7 @@ async function create_entry(event) {
     let response;
 
     try {
-        response = await fetch("api/v1/files", {
+        response = await fetch(`${APP_PATH}api/v1/files`, {
             method: "POST",
             body: JSON.stringify({
                 type: create_entry_type_span.dataset.type,

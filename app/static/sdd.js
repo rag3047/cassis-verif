@@ -1,7 +1,7 @@
 const { pdfjsLib } = globalThis;
 
 let PDF_LOADED = false;
-pdfjsLib.GlobalWorkerOptions.workerSrc = "static/pdfjs/pdf.worker.min.js";
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${APP_PATH}static/pdfjs/pdf.worker.min.js`;
 
 const container = document.querySelector(".pdf-viewer-container");
 const eventBus = new pdfjsViewer.EventBus();
@@ -36,7 +36,7 @@ let pdf;
 async function load_document() {
     // Load document.
     // TODO: handle error if no pdf is available
-    pdf = await pdfjsLib.getDocument("api/v1/sdd").promise;
+    pdf = await pdfjsLib.getDocument(`${APP_PATH}api/v1/sdd`).promise;
     pdfViewer.setDocument(pdf);
     linkService.setDocument(pdf, null);
 

@@ -25,6 +25,7 @@ from .controllers.cbmc import (
 log = getLogger(__name__)
 
 PROOF_ROOT = getenv("PROOF_ROOT")
+APP_PATH = getenv("APP_PATH", "")
 
 templates = Jinja2Templates(directory="app/templates", undefined=ChainableUndefined)
 pages = APIRouter()
@@ -40,6 +41,7 @@ async def home(request: Request) -> HTMLResponse:
         "proofs": await get_cbmc_proofs(),
         "task_status": await get_cbmc_verification_task_status(),
         "results": await get_cbmc_verification_task_result_list(),
+        "app_path": f"{APP_PATH[1:]}/" if APP_PATH else "",
     }
 
     return templates.TemplateResponse("home.html", context)
@@ -68,6 +70,7 @@ async def software_design_document(request: Request) -> HTMLResponse:
     context = {
         "title": "SDD | Cassis-Verif",
         "request": request,
+        "app_path": f"{APP_PATH[1:]}/" if APP_PATH else "",
     }
     return templates.TemplateResponse("software-design-document.html", context)
 
@@ -151,6 +154,7 @@ async def editor(request: Request) -> HTMLResponse:
     context = {
         "title": "Editor | Cassis-Verif",
         "request": request,
+        "app_path": f"{APP_PATH[1:]}/" if APP_PATH else "",
         "selected_proof": selected_proof,
         "proofs": await get_cbmc_proofs(),
         "loops": loops,

@@ -29,6 +29,9 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 log.info(f"Log level set to: {log_level}")
 
+app_path = getenv("APP_PATH", "")
+controller_prefix = f"{app_path}/api/v1"
+
 # dynamically load routes from controllers
 controller_dir = Path(__file__).parent / "controllers"
 controllers = (
@@ -47,10 +50,10 @@ for controller in controllers:
             f"Module '{controller.stem}' does not have a router defined. Skipping."
         )
     else:
-        app.include_router(router, prefix="/api/v1")
+        app.include_router(router, prefix=controller_prefix)
 
-app.include_router(pages)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.include_router(pages, prefix=app_path)
+app.mount(f"{app_path}/static", StaticFiles(directory="app/static"), name="static")
 # TODO: add mount point for clang language server
 
 
