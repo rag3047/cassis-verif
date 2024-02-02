@@ -11,9 +11,7 @@ from importlib import import_module
 from .utils.models import HTTPError
 from .pages import pages
 
-
 app_path = getenv("APP_PATH", "")
-controller_prefix = f"{app_path}/api/v1"
 
 app = FastAPI(root_path=app_path)
 app.debug = getenv("DEBUG", "").lower() in ("true", "y", "yes", "1", "on")
@@ -51,10 +49,10 @@ for controller in controllers:
             f"Module '{controller.stem}' does not have a router defined. Skipping."
         )
     else:
-        app.include_router(router, prefix=controller_prefix)
+        app.include_router(router, prefix="/api/v1")
 
 app.include_router(pages, prefix=app_path)
-app.mount(f"{app_path}/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # TODO: add mount point for clang language server
 
 
