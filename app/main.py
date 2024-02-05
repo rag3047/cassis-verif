@@ -51,7 +51,7 @@ for controller in controllers:
     else:
         app.include_router(router, prefix="/api/v1")
 
-app.include_router(pages, prefix=app_path)
+app.include_router(pages)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # TODO: add mount point for clang language server
 
