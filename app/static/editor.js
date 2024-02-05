@@ -52,9 +52,11 @@ window.addEventListener("keydown", async (event) => {
 
 async function on_file_selected(path) {
     // store current view state (e.g. scroll position)
-    let current_model_uri = editor.getModel().uri.toString();
-    const current_view_state = editor.saveViewState();
-    sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+    let current_model_uri = editor.getModel()?.uri.toString();
+    if (current_model_uri) {
+        const current_view_state = editor.saveViewState();
+        sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
+    }
 
     const uri = "api/v1/files/" + encodeURIComponent(path);
     let model = monaco.editor.getModel(uri);
