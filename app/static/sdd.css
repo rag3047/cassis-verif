@@ -54,6 +54,10 @@
     margin: auto;
 }
 
+.arrow[disabled]::after {
+    border-color: gray;
+}
+
 .arrow.up::after {
     transform: translateY(2px) rotate(-135deg);
 }
@@ -71,10 +75,19 @@ input {
     font-size: 1rem;
 }
 
+input[disabled] {
+    color: gray;
+}
+
 input:focus,
 input:hover {
     outline: none;
     border-color: gray;
+}
+
+input[disabled]:focus,
+input[disabled]:hover {
+    border-color: var(--border-color);
 }
 
 #page-num {
@@ -98,6 +111,7 @@ input:hover {
 .pdf-viewer-section {
     flex-grow: 1;
     position: relative;
+    background-color: var(--bg-light);
 }
 
 .pdf-viewer-container {
@@ -106,6 +120,15 @@ input:hover {
     overflow: auto;
     position: absolute;
     background-color: var(--bg-dark);
+}
+
+.unavailable {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    padding-top: 3rem;
+    background-color: var(--bg-light);
+    color: white;
 }
 
 /* Hide number input arrow buttons */

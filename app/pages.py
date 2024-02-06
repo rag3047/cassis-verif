@@ -7,6 +7,7 @@ from logging import getLogger
 from contextlib import suppress
 
 from .controllers.hints import get_function_hint
+from .controllers.sdd import get_sdd_available
 from .controllers.doxygen import (
     get_doxygen_docs,
     get_doxygen_callgraph_image_paths,
@@ -79,6 +80,7 @@ async def software_design_document(request: Request) -> HTMLResponse:
 
     context = {
         "title": "SDD | Cassis-Verif",
+        "sdd_available": await get_sdd_available(),
         "request": request,
     }
     return templates.TemplateResponse("software-design-document.html", context)

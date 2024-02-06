@@ -15,8 +15,16 @@
 <main class="content">
     <div class="toolbar">
         <div>
-            <button class="button arrow up" onclick="prev_page()"></button>
-            <button class="button arrow down" onclick="next_page()"></button>
+            <button 
+                class="button arrow up" 
+                onclick="prev_page()"
+                {{ 'disabled' if not sdd_available }}
+            ></button>
+            <button 
+                class="button arrow down" 
+                onclick="next_page()"
+                {{ 'disabled' if not sdd_available }}
+            ></button>
             <input
                 id="page-num"
                 class="page-num"
@@ -26,6 +34,7 @@
                 step="1"
                 onkeydown="set_page_number(event)"
                 onfocus="this.select()"
+                {{ 'disabled' if not sdd_available }}
             />
             <span>of</span>
             <span id="page-count" class="page-count">N/A</span>
@@ -38,11 +47,25 @@
             oninput="reset_search()"
             onkeydown="find_next(event)"
             onfocus="this.select()"
+            {{ 'disabled' if not sdd_available }}
         />
         <div>
-            <button class="button" onclick="zoom_out()">−</button>
-            <button class="button" onclick="zoom_in()">+</button>
-            <select id="sel-zoom" class="sel-zoom" onchange="set_zoom()">
+            <button 
+                class="button" 
+                onclick="zoom_out()"
+                {{ 'disabled' if not sdd_available }}
+            >−</button>
+            <button 
+                class="button" 
+                onclick="zoom_in()"
+                {{ 'disabled' if not sdd_available }}
+            >+</button>
+            <select 
+                id="sel-zoom" 
+                class="sel-zoom" 
+                onchange="set_zoom()"
+                {{ 'disabled' if not sdd_available }}
+            >
                 <option value="page-fit">Page Fit</option>
                 <option value="page-width">Page Width</option>
                 <option value=".50">50%</option>
@@ -55,10 +78,13 @@
         </div>
     </div>
     <div class="pdf-viewer-section">
-        <!-- TODO: handle error if no pdf is available -->
+        {% if sdd_available %}
         <div class="pdf-viewer-container">
             <div id="viewer" class="pdfViewer"></div>
         </div>
+        {% else %}
+        <h2 class="unavailable">No Software-Design-Document available.</h2>
+        {% endif %}
     </div>
 </main>
 {% endblock %}

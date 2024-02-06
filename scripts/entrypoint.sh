@@ -39,7 +39,7 @@ if [[ -d "$PRESET_DIR/includes" ]]; then
     done
 fi
 
-if [[ ! -f "sdd.pdf" ]]; then
+if [[ ! -f "sdd.pdf" ]] && [[ -f "$PRESET_DIR/sdd.pdf" ]]; then
     echo "Entrypoint: Copying SDD"
     mv "$PRESET_DIR/sdd.pdf" .
 fi

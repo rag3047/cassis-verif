@@ -470,3 +470,11 @@ body {
 .nice-select .option.focus {
     background-color: var(--bg-light);
 }
+
+.nice-select.disabled {
+    border-color: var(--border-color);
+
+    & > .current {
+        color: gray;
+    }
+}

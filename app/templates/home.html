@@ -71,7 +71,8 @@
                     >Delete</button>
                 </div>
             </li>
-            {% endfor %} {% else %}
+            {% endfor %}
+            {% else %}
             <li class="list-item-empty"><h2>There are no proofs to show</h2></li>
             {% endif %}
         </ul>
@@ -96,7 +97,8 @@
                         <h4 class="width-50">Name</h4>
                         <h4 class="width-25">Actions</h4>
                     </li>
-                    {% if results | length > 0 %} {% for result in results %}
+                    {% if results | length > 0 %}
+                    {% for result in results %}
                     <li class="table-item">
                         <span class="width-25">{{ result.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                         <a 
@@ -115,7 +117,8 @@
                             >Delete</button>
                         </span>
                     </li>
-                    {% endfor %} {% else %}
+                    {% endfor %} 
+                    {% else %}
                     <li class="table-item-empty"><h2>There are no results to show</h2></li>
                     {% endif %}
                 </ul>
