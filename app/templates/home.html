@@ -2,6 +2,7 @@
 {% extends 'base.html' %}
 
 {% block style %}
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='home.css') }}" />
 {% endblock %}
@@ -35,15 +36,32 @@
             >Pull Sources</button>
         </div>
         <ul class="list">
-            {% if proofs | length > 0 %} {% for proof in proofs %}
+            {% if proofs | length > 0 %}
+            {% for proof in proofs %}
+            {% set _stats = stats[proof.name] %}
             <li class="list-item">
-                <div>
-                    <h2>{{ proof.name }}</h2>
-                    <span>{{ proof.src | default('N/A', true) }}</span>
+                <div class="width-60">
+                    <h2 class="proof-name">{{ proof.name }}</h2>
+                    <div class="file-path">{{ proof.src | default('N/A', true) }}</div>
+                    <div class="stats">
+                        <div><span>Status:</span>{{ _stats.status | title if _stats.status else 'N/A' }}</div>
+                        <div>
+                            <span>Coverage:</span>{{ "{0:.0%}".format(_stats.coverage_percentage) if _stats.coverage_percentage else 'N/A' }}
+                        </div>
+                        {% if _stats.errors | length > 0 %}
+                            <div><span>Errors:</span>{{ _stats.errors | length }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div>
+                <div class="width-40">
+                    <button
+                        class="button"
+                        {{ 'disabled' if not _stats.is_complete }}
+                        onclick="open_latest_report('{{ proof.name }}')"
+                    >Report</button>
                     <a 
-                        class="button" 
+                        class="button"
+                        target="_blank"
                         href="{{ url_for('editor') }}?file-name={{ proof.src | urlencode }}&proof-name={{ proof.name }}"
                     >Edit</a>
                     <button 
@@ -88,7 +106,7 @@
                         <span class="width-25">
                             <a 
                                 class="button" 
-                                href="{{ url_for('download_cbmc_verification_task_result') }}?version={{ result.name }}"
+                                href="{{ url_for('download_cbmc_verification_task_result', version=result.name) }}"
                             >Download</a>
                             <button 
                                 class="button danger delete" 

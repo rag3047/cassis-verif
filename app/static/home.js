@@ -449,6 +449,10 @@ ws.onclose = () => {
 // Utils
 //---------------------------------------------------------------------------------------------------------
 
+function open_latest_report(proof_name) {
+    window.open(`results?file-path=artifacts/${proof_name}/report/html/index.html`, "_blank");
+}
+
 let timer;
 function debounce(func, timeout = 300) {
     return (...args) => {

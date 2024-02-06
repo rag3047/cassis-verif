@@ -1,13 +1,11 @@
 <!-- prettier-ignore -->
 {% extends 'base.html' %}
 
-{% block pre_layout %}
+{% block style %}
 <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
-{% endblock %}
-
-{% block style %}
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
 {% endblock %}
@@ -247,7 +245,7 @@
             >Please select a proof to display hints</h3>
         </div>
     </div>
-</div>
+</main>
 
 <dialog id="contextmenu-file" class="contextmenu">
     <ul>

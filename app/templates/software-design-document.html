@@ -1,13 +1,11 @@
 <!-- prettier-ignore -->
 {% extends 'base.html' %}
 
-{% block pre_layout %}
-<link rel="stylesheet" href="{{ url_for('static', path='pdfjs/pdf_viewer.css')}}" />
-<link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
-{% endblock %}
-
 <!-- prettier-ignore -->
 {% block style %}
+<link rel="stylesheet" href="{{ url_for('static', path='pdfjs/pdf_viewer.css')}}" />
+<link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='sdd.css') }}" />
 {% endblock %}
