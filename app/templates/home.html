@@ -57,7 +57,7 @@
                     <button
                         class="button"
                         {{ 'disabled' if not _stats.is_complete }}
-                        onclick="open_latest_report('{{ proof.name }}')"
+                        onclick="window.open('{{ proof.report_link }}', '_blank')"
                     >Report</button>
                     <a 
                         class="button"
