@@ -319,8 +319,8 @@ async function search_function() {
             (func) => `
                 <li class="list-item">
                     <div>
-                        <h2>${func.name}</h2>
-                        <span>${func.file}</span>
+                        <h2 class="entry-name">${func.name}</h2>
+                        <span class="file-path">${func.file}</span>
                     </div>
                     <div>
                         <button 
