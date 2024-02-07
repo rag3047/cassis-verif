@@ -51,8 +51,7 @@ class CBMCProofCreate(BaseModel):
 
 class CBMCProof(CBMCProofCreate):
     harness: str
-    # TODO
-    # report_link: Path | None = None
+    report_link: str
 
 
 @router.get("/proofs")
@@ -712,4 +711,5 @@ def _load_proof_data(proof_dir: Path) -> CBMCProof:
         name=proof_dir.name,
         src=src_file,
         harness=harness_file,
+        report_link=f"results?file-path=artifacts/{proof_dir.name}/report/html/index.html",
     )
