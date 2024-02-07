@@ -8,16 +8,22 @@ from ..utils.models import Hint
 log = getLogger(__name__)
 
 HINTS_DIR = Path("hints")
-
-hint_files = [f for f in HINTS_DIR.iterdir() if f.is_file() and f.suffix == ".json"]
-log.debug(f"Found {len(hint_files)} hint files")
-
 HINTS_DB: dict[str, dict[str, str]] = {}
-for file in hint_files:
-    type = file.stem.split("_")[0]
-    HINTS_DB[type] = json.loads(file.read_text())
 
-log.info(f"Loaded hints for the following types: {list(HINTS_DB.keys())}")
+if not HINTS_DIR.exists():
+    log.warn(
+        f"No Hints directory found. Consider using the Hints-API or adding a hints.tgz file the project preset."
+    )
+
+else:
+    hint_files = [f for f in HINTS_DIR.iterdir() if f.is_file() and f.suffix == ".json"]
+    log.debug(f"Found {len(hint_files)} hint files")
+
+    for file in hint_files:
+        type = file.stem.split("_")[0]
+        HINTS_DB[type] = json.loads(file.read_text())
+
+    log.info(f"Loaded hints for the following types: {list(HINTS_DB.keys())}")
 
 
 async def get_function_hint(function_name: str) -> Hint:

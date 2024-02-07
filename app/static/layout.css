@@ -171,15 +171,6 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
-    & h2 {
-        margin: 0;
-        margin-bottom: 0.5rem;
-    }
-
-    & button {
-        margin-left: 0.5rem;
-    }
 }
 
 .list-item:nth-child(odd) {
@@ -330,6 +321,39 @@ body {
     margin: 0 0.5rem 0 0.5rem;
 }
 
+.icon {
+    cursor: pointer;
+    display: inline;
+    font-size: 1.5rem;
+}
+
+.icon:hover {
+    color: var(--link-color);
+}
+
+.tooltip {
+    background-color: var(--bg-dark);
+    color: white;
+    border: 2px solid var(--border-color);
+    overflow-wrap: anywhere;
+    max-width: 300px;
+    pointer-events: none;
+    margin: 0;
+    z-index: 1;
+
+    & > * {
+        margin: 0;
+    }
+
+    & > h4 {
+        margin-bottom: 1rem;
+    }
+}
+
+.tooltip:focus-visible {
+    outline: none;
+}
+
 /* .alert.inline {
     display: inline;
     height: 100%;
@@ -445,4 +469,12 @@ body {
 .nice-select .option.selected.focus,
 .nice-select .option.focus {
     background-color: var(--bg-light);
+}
+
+.nice-select.disabled {
+    border-color: var(--border-color);
+
+    & > .current {
+        color: gray;
+    }
 }

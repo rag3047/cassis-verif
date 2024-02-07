@@ -1,5 +1,10 @@
 const { pdfjsLib } = globalThis;
 
+document.addEventListener("DOMContentLoaded", async () => {
+    NiceSelect.bind(document.querySelector("select"), { searchable: false });
+    await load_document();
+});
+
 let PDF_LOADED = false;
 pdfjsLib.GlobalWorkerOptions.workerSrc = `${APP_PATH}static/pdfjs/pdf.worker.min.js`;
 
@@ -78,11 +83,6 @@ async function prev_page() {
     if (!PDF_LOADED) return;
     pdfViewer.previousPage();
 }
-
-document.addEventListener("DOMContentLoaded", async () => {
-    NiceSelect.bind(document.querySelector("select"), { searchable: false });
-    await load_document();
-});
 
 //---------------------------------------------------------------------------------------------------------
 // Search

@@ -592,8 +592,8 @@ function show_hint_tooltip(event) {
     hint_tooltip.show();
 
     const rect = event.target.getBoundingClientRect();
-    hint_tooltip.style.left = rect.left - hint_tooltip.offsetWidth + "px";
-    hint_tooltip.style.top = rect.top - hint_tooltip.offsetHeight + "px";
+    hint_tooltip.style.left = Math.ceil(rect.left + rect.width + 2 - hint_tooltip.offsetWidth) + "px";
+    hint_tooltip.style.top = Math.ceil(rect.top - hint_tooltip.offsetHeight) + "px";
 }
 
 function close_hint_tooltip() {

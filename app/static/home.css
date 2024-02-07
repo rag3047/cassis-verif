@@ -77,8 +77,41 @@
     }
 }
 
-.list-item span {
+.list-item {
+    & > div:last-child {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}
+
+.entry-name {
+    margin: 0;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-path {
     font-family: var(--code-font);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 1rem;
+}
+
+.stats {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    & > div {
+        margin-bottom: 0.25rem;
+
+        & > span {
+            display: inline-block;
+            width: 100px;
+        }
+    }
 }
 
 .center-block {

@@ -2,6 +2,7 @@
 {% extends 'base.html' %}
 
 {% block style %}
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', path='results.css') }}" />
 {% endblock %}
 
@@ -10,7 +11,7 @@
 <main class="content">
     <iframe
         id="result-frame"
-        src="{{ url_for('get_cbmc_verification_task_result', version=version, file_path='index.html') }}"
+        src="{{ url_for('get_cbmc_verification_task_result', version=version, file_path=file_path) }}"
     ></iframe>
 </main>
 {% endblock %}

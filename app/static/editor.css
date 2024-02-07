@@ -333,32 +333,3 @@
     display: flex !important;
     align-items: center;
 }
-
-.icon {
-    cursor: pointer;
-}
-
-.icon:hover {
-    color: var(--link-color);
-}
-
-.tooltip {
-    background-color: var(--bg-dark);
-    color: white;
-    border: 2px solid var(--border-color);
-    overflow-wrap: anywhere;
-    max-width: 300px;
-    pointer-events: none;
-
-    & > * {
-        margin: 0;
-    }
-
-    & > h4 {
-        margin-bottom: 1rem;
-    }
-}
-
-.tooltip:focus-visible {
-    outline: none;
-}

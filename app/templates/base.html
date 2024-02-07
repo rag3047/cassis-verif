@@ -8,13 +8,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
         <!-- prettier-ignore -->
-        {% block pre_layout%}
-        {% endblock %}
-
-        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
-
-        <!-- prettier-ignore -->
         {% block style %}
+        <link rel="stylesheet" href="{{ url_for('static', path='layout.css') }}" />
         {% endblock %}
     </head>
     <body>

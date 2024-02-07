@@ -7,6 +7,7 @@ from logging import getLogger
 from contextlib import suppress
 
 from .controllers.hints import get_function_hint
+from .controllers.sdd import get_sdd_available
 from .controllers.doxygen import (
     get_doxygen_docs,
     get_doxygen_callgraph_image_paths,
@@ -19,6 +20,7 @@ from .controllers.cbmc import (
     get_cbmc_verification_task_result_list,
     get_cbmc_verification_task_status,
     get_cbmc_proof_loop_info,
+    get_latest_cbmc_verification_task_stats,
 )
 
 
@@ -35,13 +37,20 @@ pages = APIRouter()
 async def home(request: Request) -> HTMLResponse:
     log.info("Rendering home page")
 
+    proofs = await get_cbmc_proofs()
+
+    stats = {}
+    for proof in proofs:
+        stats[proof.name] = await get_latest_cbmc_verification_task_stats(proof.name)
+
     context = {
         "title": "Home | Cassis-Verif",
         "request": request,
-        "proofs": await get_cbmc_proofs(),
+        "proofs": proofs,
         "task_status": await get_cbmc_verification_task_status(),
         "results": await get_cbmc_verification_task_result_list(),
         "app_path": f"{APP_PATH[1:]}/" if APP_PATH else "",
+        "stats": stats,
     }
 
     return templates.TemplateResponse("home.html", context)
@@ -54,10 +63,14 @@ async def results(request: Request) -> HTMLResponse:
     version = request.query_params.get("version", "latest")
     log.debug(f"{version=}")
 
+    file_path = request.query_params.get("file-path", "index.html")
+    log.debug(f"{file_path=}")
+
     context = {
         "title": "Results | Cassis-Verif",
         "request": request,
         "version": version,
+        "file_path": file_path,
     }
 
     return templates.TemplateResponse("results.html", context)
@@ -69,6 +82,7 @@ async def software_design_document(request: Request) -> HTMLResponse:
 
     context = {
         "title": "SDD | Cassis-Verif",
+        "sdd_available": await get_sdd_available(),
         "request": request,
         "app_path": f"{APP_PATH[1:]}/" if APP_PATH else "",
     }

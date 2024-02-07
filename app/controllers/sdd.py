@@ -29,6 +29,13 @@ async def get_sdd() -> FileResponse:
     return FileResponse(sdd_path, media_type="application/pdf")
 
 
+@router.get("/available", response_model=bool)
+async def get_sdd_available() -> bool:
+    """Check if the Software Design Document is available."""
+    sdd_path = Path.cwd() / "sdd.pdf"
+    return sdd_path.exists()
+
+
 @router.post(
     "",
     status_code=status.HTTP_204_NO_CONTENT,

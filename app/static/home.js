@@ -321,8 +321,8 @@ async function search_function() {
             (func) => `
                 <li class="list-item">
                     <div>
-                        <h2>${func.name}</h2>
-                        <span>${func.file}</span>
+                        <h2 class="entry-name">${func.name}</h2>
+                        <span class="file-path">${func.file}</span>
                     </div>
                     <div>
                         <button 
@@ -450,6 +450,10 @@ ws.onclose = () => {
 //---------------------------------------------------------------------------------------------------------
 // Utils
 //---------------------------------------------------------------------------------------------------------
+
+function open_latest_report(proof_name) {
+    window.open(`results?file-path=artifacts/${proof_name}/report/html/index.html`, "_blank");
+}
 
 let timer;
 function debounce(func, timeout = 300) {

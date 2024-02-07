@@ -1,4 +1,5 @@
 import re
+import json
 
 from typing import Literal
 from os import getenv, remove, linesep
@@ -389,6 +390,14 @@ async def get_cbmc_verification_task_output(websocket: WebSocket) -> None:
 # ------------------------------------------------------------
 
 
+class CBMCResultStats(BaseModel):
+    # proof_name: str
+    is_complete: bool = False
+    status: str | None = None
+    errors: list[str] = []
+    coverage_percentage: float | None = None
+
+
 @router.get("/results")
 async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
     """Return list of all CBMC verification task runs."""
@@ -414,19 +423,110 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
     return sorted(runs, key=lambda run: run.start_date, reverse=True)
 
 
+@router.get("/results/{proof_name}/stats")
+async def get_latest_cbmc_verification_task_stats(proof_name: str) -> CBMCResultStats:
+    """Return statistics of latest CBMC proof execution."""
+    log.info("Get latest CBMC verification task stats")
+    log.debug(f"{proof_name=}")
+
+    report_dir = (
+        Path(PROOF_ROOT) / "output/latest/html/artifacts" / proof_name / "report/json"
+    )
+
+    if not report_dir.exists():
+        log.debug(f"Report not found: {report_dir}")
+        return CBMCResultStats(is_complete=False)
+
+    status = None
+    errors: list[str] = []
+    coverage_percentage: float | None = None
+
+    result_json = report_dir / "viewer-result.json"
+    if result_json.exists():
+        result = json.loads(result_json.read_text())
+        viewer_result = result.get("viewer-result", {})
+
+        status = viewer_result.get("prover", "")
+        errors = viewer_result.get("results", {}).get("false", [])
+
+    else:
+        log.debug(f"Result file not found: {result_json}")
+
+    coverage_json = report_dir / "viewer-coverage.json"
+    if coverage_json.exists():
+        coverage = json.loads(coverage_json.read_text())
+        viewer_coverage = coverage.get("viewer-coverage", {})
+
+        coverage_percentage = viewer_coverage.get("overall_coverage", {}).get(
+            "percentage", None
+        )
+
+    else:
+        log.debug(f"Coverage file not found: {coverage_json}")
+
+    log.debug(f"{status=}")
+    log.debug(f"{errors=}")
+    log.debug(f"{coverage_percentage=}")
+
+    return CBMCResultStats(
+        is_complete=True,
+        status=status,
+        errors=errors,
+        coverage_percentage=coverage_percentage,
+    )
+
+
+@router.get(
+    "/results/{version}/download",
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
+)
+async def download_cbmc_verification_task_result(
+    version: UUID4,
+    tasks: BackgroundTasks,
+    format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
+) -> FileResponse:
+    """Download results of CBMC proof execution."""
+    log.info("Download CBMC verification task results")
+
+    version_str = str(version).lower()
+    log.debug(f"{version_str=}")
+
+    path = Path(PROOF_ROOT) / "output/litani/runs" / version_str
+
+    if not path.exists():
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Result not found: {version_str}",
+        )
+
+    abs_file_path = make_archive(
+        version_str,  # archive file name
+        format,
+        path,  # root directory to archive
+    )
+
+    # delete archive file after download
+    tasks.add_task(_cleanup_archive_file, abs_file_path)
+
+    return FileResponse(
+        abs_file_path,
+        filename=Path(abs_file_path).name,
+    )
+
+
 @router.get(
     # Note: this path allows for directory browsing using relative paths (i.e. navigate the dashboard)
     "/results/{version}/{file_path:path}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
 async def get_cbmc_verification_task_result(
-    version: UUID4 | None = None,
+    version: UUID4 | Literal["latest"] = "latest",
     file_path: str | None = None,
 ) -> FileResponse:
     """Return results of CBMC proof execution."""
     log.info("Get CBMC verification task results")
 
-    version_str = str(version).lower() if version is not None else "latest"
+    version_str = str(version).lower()
     file_path = file_path or "index.html"
 
     log.debug(f"{file_path=}")
@@ -480,57 +580,6 @@ async def delete_cbmc_verification_task_results(version: UUID4) -> None:
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs/{version_str}")
     rmtree(path)
-
-
-@router.get(
-    "/results/download",
-    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
-)
-async def download_cbmc_verification_task_result(
-    version: UUID4,
-    tasks: BackgroundTasks,
-    format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
-) -> FileResponse:
-    """Download results of CBMC proof execution."""
-    log.info("Download CBMC verification task results")
-
-    version_str = str(version).lower()
-    log.debug(f"{version_str=}")
-
-    path = Path(PROOF_ROOT) / "output/litani/runs" / version_str
-
-    if not path.exists():
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
-            f"Result not found: {version_str}",
-        )
-
-    abs_file_path = make_archive(
-        version_str,  # archive file name
-        format,
-        path,  # root directory to archive
-    )
-
-    # delete archive file after download
-    tasks.add_task(_cleanup_archive_file, abs_file_path)
-
-    return FileResponse(
-        abs_file_path,
-        filename=Path(abs_file_path).name,
-    )
-
-
-class CBMCResultStats(BaseModel):
-    proof_name: str
-    is_complete: bool = False
-    is_success: bool = False
-    errors: list[str] = []
-    coverage_percentage: float | None = None
-
-
-# TODO
-# async def get_latest_cbmc_verification_task_stats() -> None:
-#     ...
 
 
 # ------------------------------------------------------------

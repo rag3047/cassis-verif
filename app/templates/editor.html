@@ -1,13 +1,11 @@
 <!-- prettier-ignore -->
 {% extends 'base.html' %}
 
-{% block pre_layout %}
+{% block style %}
 <script src="{{ url_for('static', path='tree-js/tree.min.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='tree-js/treejs.min.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='nice-select2/nice-select2.css') }}" />
-{% endblock %}
-
-{% block style %}
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', path='editor.css') }}" />
 {% endblock %}
@@ -144,7 +142,8 @@
                             <div class="width-40"><h4>Type</h4></div>
                             <div class="info-icon-col"></div>
                         </li>
-                        {% if params | length > 0 %} {% for param in params %}
+                        {% if params | length > 0 %} 
+                        {% for param in params %}
                         <li class="table-item">
                             <div class="width-50">{{ param.name }}</div>
                             {% if param.ref %}
@@ -169,7 +168,8 @@
                             <div class="info-icon-col"></div>
                             {% endif %}
                         </li>
-                        {% endfor %} {% else %}
+                        {% endfor %} 
+                        {% else %}
                         <li class="table-item-empty"><h4>The selected function has no params</h4></li>
                         {% endif %}
                     </ul>
@@ -180,7 +180,8 @@
                             <div class="width-40"><h4>Type</h4></div>
                             <div class="info-icon-col"></div>
                         </li>
-                        {% if references | length > 0 %} {% for ref in references %}
+                        {% if references | length > 0 %} 
+                        {% for ref in references %}
                         <li class="table-item">
                             <div class="width-50">{{ ref.name }}</div>
                             {% if ref.href %}
@@ -204,7 +205,8 @@
                             <div class="info-icon-col"></div>
                             {% endif %}
                         </li>
-                        {% endfor %} {% else %}
+                        {% endfor %}
+                        {% else %}
                         <li class="table-item-empty"><h4>The selected function has no external references</h4></li>
                         {% endif %}
                     </ul>
@@ -229,13 +231,15 @@
                         <h4 class="width-50">Name</h4>
                         <h4 class="width-50">File:Line</h4>
                     </li>
-                    {% if loops | length > 0 %} {% for _loop in loops %}
+                    {% if loops | length > 0 %} 
+                    {% for _loop in loops %}
                     <li class="table-item">
                         <div class="width-50">{{ _loop.name }}</div>
                         <!-- TODO: add link/button to select corresponding file and scroll to function declaration -->
                         <div class="width-50">{{ _loop.file }}:{{ _loop.line }}</div>
                     </li>
-                    {% endfor %} {% else %}
+                    {% endfor %} 
+                    {% else %}
                     <li class="table-item-empty"><h4>There are no loops in the selected proof</h4></li>
                     {% endif %}
                 </ul>
@@ -247,7 +251,7 @@
             >Please select a proof to display hints</h3>
         </div>
     </div>
-</div>
+</main>
 
 <dialog id="contextmenu-file" class="contextmenu">
     <ul>
