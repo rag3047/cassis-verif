@@ -9,6 +9,13 @@ FROM ubuntu:${UBUNTU_VERSION} AS default
 RUN mkdir /output
 
 #--------------------------------------
+# AcubeSAT Preset
+#--------------------------------------
+
+FROM ubuntu:${UBUNTU_VERSION} AS acubesat
+RUN mkdir /output
+
+#--------------------------------------
 # Cassis Preset
 #--------------------------------------
 

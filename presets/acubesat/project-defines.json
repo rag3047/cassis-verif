@@ -1,0 +1,10 @@
+{
+    "includes": [
+        "$(PRESET_DIR)/includes",
+        "$(PRESET_DIR)/includes/Platform",
+        "$(PRESET_DIR)/includes/Platform/Parameters",
+        "$(PRESET_DIR)/includes/FreeRTOSTasks"
+    ],
+    "defines": [],
+    "env": []
+}

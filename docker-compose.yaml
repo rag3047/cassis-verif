@@ -5,7 +5,8 @@ services:
         build:
             context: .
             args:
-                - PRESET=cassis
+                # - PRESET=cassis
+                - PRESET=acubesat
         image: cassis-verif:1.0.0
         env_file:
             - .env
