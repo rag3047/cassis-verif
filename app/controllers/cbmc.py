@@ -13,7 +13,7 @@ from shutil import rmtree, make_archive, copytree
 from cbmc_starter_kit import setup_proof
 from asyncio import sleep
 from asyncio.subprocess import Process, create_subprocess_exec, PIPE, DEVNULL
-from datetime import datetime
+from datetime import datetime, timezone
 from io import TextIOWrapper
 
 from ..utils.models import HTTPError
@@ -26,8 +26,6 @@ CBMC_ROOT = getenv("CBMC_ROOT")
 
 CBMC_PROOFS_TASK: Process | None = None
 CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
-# TODO: this would need to be added to the litani/runs/<guid> directory...
-# CBMC_PROOFS_TASK_TIMESTAMP = Path(PROOF_ROOT) / "output/timestamp.txt"
 
 RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
 RE_LOOP_NAME = re.compile(r"^Loop (?P<name>.+):$", re.MULTILINE)
@@ -260,7 +258,7 @@ class CBMCTaskStatus(BaseModel):
 
 class CBMCResult(BaseModel):
     name: str
-    start_date: datetime
+    start_time: datetime
 
 
 @router.post(
@@ -269,7 +267,7 @@ class CBMCResult(BaseModel):
 )
 async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     """Execute all CBMC proofs."""
-    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT  # , CBMC_PROOFS_TASK_TIMESTAMP
+    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT
     log.info("Start CBMC verification task")
 
     if CBMC_PROOFS_TASK is not None:
@@ -284,13 +282,6 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     CBMC_PROOFS_TASK_OUTPUT.parent.mkdir(exist_ok=True)
     CBMC_PROOFS_TASK_OUTPUT.touch(exist_ok=True)
     fd = CBMC_PROOFS_TASK_OUTPUT.open("w")
-
-    # # create creation timestamp file
-    # CBMC_PROOFS_TASK_TIMESTAMP.parent.mkdir(exist_ok=True)
-    # CBMC_PROOFS_TASK_TIMESTAMP.touch(exist_ok=True)
-
-    # with open(CBMC_PROOFS_TASK_TIMESTAMP, "w") as file:
-    #     print(datetime.now().isoformat(), file=file)
 
     # call run-cbmc-proofs.py in subprocess
     CBMC_PROOFS_TASK = await create_subprocess_exec(
@@ -407,19 +398,35 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
     if not path.exists():
         return []
 
-    runs = [
+    runs = [run for run in path.iterdir() if run.is_dir()]
+    start_times: list[datetime] = []
+
+    for run in runs:
+        try:
+            run_json = run / "html/run.json"
+            run_data = json.loads(run_json.read_text())
+            # Note: python 3.10 does not allow parsing of the following iso format: 2024-02-07T13:14:50Z
+            #       therefore we need to drop the timezone information and add it manually
+            start_time = datetime.fromisoformat(run_data["start_time"][:-1])
+            # manually set timezone to UTC (without changing the time itself)
+            start_time = start_time.replace(tzinfo=timezone.utc)
+            # convert to local timezone
+            start_times.append(start_time.astimezone())
+
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            start_times.append(datetime.fromtimestamp(run.stat().st_ctime))
+
+    results = [
         CBMCResult(
             name=run.name,
-            # TODO: get more reliable timestamp (store at creation time)
-            start_date=datetime.fromtimestamp(run.stat().st_ctime),
+            start_time=start_time,
         )
-        for run in path.iterdir()
-        if run.is_dir()
+        for run, start_time in zip(runs, start_times, strict=True)
     ]
 
-    log.debug(f"{runs=}")
+    log.debug(f"{results=}")
 
-    return sorted(runs, key=lambda run: run.start_date, reverse=True)
+    return sorted(results, key=lambda run: run.start_time, reverse=True)
 
 
 @router.get("/results/{proof_name}/stats")
