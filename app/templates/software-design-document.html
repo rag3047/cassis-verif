@@ -91,10 +91,6 @@
 
 <!-- prettier-ignore -->
 {% block script %}
-<script>
-    // Hacky way to pass the app path to the JS files...
-    APP_PATH = "{{app_path}}";
-</script>
 <script src="{{ url_for('static', path='pdfjs/pdf.min.js') }}"></script>
 <script src="{{ url_for('static', path='pdfjs/pdf_viewer.js') }}"></script>
 <script src="{{ url_for('static', path='nice-select2/nice-select2.js') }}"></script>

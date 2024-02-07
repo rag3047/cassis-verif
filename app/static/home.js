@@ -13,7 +13,7 @@ async function delete_proof() {
 confirm_delete_proof_modal.addEventListener("close", async () => {
     if (confirm_delete_proof_modal.returnValue != "cancel") {
         try {
-            await fetch(`${APP_PATH}api/v1/cbmc/proofs/${confirm_delete_proof_modal.returnValue}`, {
+            await fetch(`api/v1/cbmc/proofs/${confirm_delete_proof_modal.returnValue}`, {
                 method: "DELETE",
             });
         } catch (err) {
@@ -52,7 +52,7 @@ async function delete_result() {
 confirm_delete_result_modal.addEventListener("close", async () => {
     if (confirm_delete_result_modal.returnValue != "cancel") {
         try {
-            await fetch(`${APP_PATH}api/v1/cbmc/results/${confirm_delete_result_modal.returnValue}`, {
+            await fetch(`api/v1/cbmc/results/${confirm_delete_result_modal.returnValue}`, {
                 method: "DELETE",
             });
         } catch (err) {
@@ -93,7 +93,7 @@ async function update_git_config(event) {
 
     let response;
     try {
-        response = await fetch(`${APP_PATH}api/v1/git/config`, {
+        response = await fetch(`api/v1/git/config`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -128,7 +128,7 @@ async function update_git_config(event) {
 async function show_update_git_config_modal() {
     let response;
     try {
-        response = await fetch(`${APP_PATH}api/v1/git/config`).then((res) => res.json());
+        response = await fetch(`api/v1/git/config`).then((res) => res.json());
     } catch (err) {
         console.error(err);
         alert(`Failed to update git config, check console for details.`);
@@ -184,7 +184,7 @@ async function pull_sources() {
 
     git_pull_modal_status.textContent = "Pulling sources";
     try {
-        response = await fetch(`${APP_PATH}api/v1/git/pull`, {
+        response = await fetch(`api/v1/git/pull`, {
             method: "POST",
         });
     } catch (err) {
@@ -202,7 +202,7 @@ async function pull_sources() {
 
     git_pull_modal_status.textContent = "Rebuilding doxygen docs";
     try {
-        response = await fetch(`${APP_PATH}api/v1/doxygen/build`, {
+        response = await fetch(`api/v1/doxygen/build`, {
             method: "POST",
         });
     } catch (err) {
@@ -259,7 +259,7 @@ async function add_proof(event) {
 
     let response;
     try {
-        response = await fetch(`${APP_PATH}api/v1/cbmc/proofs`, {
+        response = await fetch(`api/v1/cbmc/proofs`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -300,9 +300,7 @@ async function search_function() {
 
     let functions;
     try {
-        functions = await fetch(
-            `${APP_PATH}api/v1/ctags/functions?filter=${filter}&limit=${PAGE_SIZE}&offset=${offset}`
-        ) //
+        functions = await fetch(`api/v1/ctags/functions?filter=${filter}&limit=${PAGE_SIZE}&offset=${offset}`) //
             .then((res) => res.json());
     } catch (err) {
         console.error(err);
@@ -383,7 +381,7 @@ async function run_all_proofs() {
     let response;
 
     try {
-        response = await fetch(`${APP_PATH}api/v1/cbmc/task`, {
+        response = await fetch(`api/v1/cbmc/task`, {
             method: "POST",
         }).then((res) => res.json());
     } catch (err) {
@@ -406,7 +404,7 @@ async function run_all_proofs() {
 async function cancel_proof_run() {
     let response;
     try {
-        response = await fetch(`${APP_PATH}api/v1/cbmc/task`, {
+        response = await fetch(`api/v1/cbmc/task`, {
             method: "DELETE",
         });
     } catch (err) {
@@ -433,7 +431,7 @@ const output_console = document.querySelector(".console");
 const task_status_spinner = document.querySelector(".task-status-spinner");
 const current_task_status_indicator = document.querySelector("#current-task-status");
 
-const ws = new WebSocket(`ws://${window.location.host}/${APP_PATH}api/v1/cbmc/task/output`);
+const ws = new WebSocket(`ws://${window.location.host}/api/v1/cbmc/task/output`);
 
 ws.onmessage = (event) => {
     output_console.textContent += event.data;
