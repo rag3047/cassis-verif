@@ -2,5 +2,5 @@
 .env
 
 # exclude confidential data
-sdd.pdf
-src.tgz
+presets/cassis/sdd.pdf
+presets/cassis/src.tgz
