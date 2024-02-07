@@ -431,7 +431,8 @@ const output_console = document.querySelector(".console");
 const task_status_spinner = document.querySelector(".task-status-spinner");
 const current_task_status_indicator = document.querySelector("#current-task-status");
 
-const ws = new WebSocket(`ws://${window.location.host}/api/v1/cbmc/task/output`);
+// WS_URL ist defined in home.html template
+const ws = new WebSocket(WS_URL);
 
 ws.onmessage = (event) => {
     output_console.textContent += event.data;

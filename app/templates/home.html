@@ -199,6 +199,9 @@
 
 <!-- prettier-ignore -->
 {% block script %}
+<script>
+    WS_URL = "{{ url_for('get_cbmc_verification_task_output') }}";
+</script>
 <script src="{{ url_for('static', path='home.js') }}" async defer></script>
 {% endblock %}
 
