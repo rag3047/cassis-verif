@@ -1,0 +1,154 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+
+{% block style %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', path='scrollbar.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', path='howto.css') }}" />
+{% endblock %}
+
+<!-- prettier-ignore -->
+{% block content %}
+<main class="content">
+    <h1>How to create a simple proof</h1>
+    <p>Table of contents:</p>
+    <ol>
+        <li><a href="#select-function">Selecting a function to prove</a></li>
+        <li><a href="#write-proof">Writing the proof</a></li>
+        <li><a href="#run-proof-and-check-results">Running the proof and checking the results</a></li>
+    </ol>
+    <h2 id="select-function">Selecting a function to prove</h2>
+    <p>
+        Start by selecting an appropriate function. If you are unfamiliar with the source code, the doxygen page is a
+        great way to familiarize yourself with the codebase. For example it provides callgraphs for every function which
+        gives you an overview of dependencies. If you're new to writing formal proofs, you generally want to start with
+        a simple function without dependencies (i.e. at the end of a callgraph). Another advantage of starting at the
+        bottom of the callgraph is that you can later stub out functions that you've already proven to be correct and
+        hence build a hierarchy of proofs. In this example we select the function
+        <span class="code">check_md5_digest</span> from the file <span class="code">cassis_utilities.c</span>.
+    </p>
+    <a href="{{ url_for('static', path='images/doxygen-select-function.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/doxygen-select-function.png') }}" alt="Doxygen Select Function" />
+    </a>
+    <p>
+        Once you have selected a function that you want to formally prove, you can navigate to the 'Home' page, where
+        you can create the proof.
+    </p>
+    <a href="{{ url_for('static', path='images/add-proof-1.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/add-proof-1.png') }}" , alt="Add Proof 1" />
+    </a>
+    <p>Use the search bar to find the function you're looking for and confirm by clicking on 'Add'.</p>
+    <a href="{{ url_for('static', path='images/add-proof-2.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/add-proof-2.png') }}" , alt="Add Proof 2" />
+    </a>
+    <h2 id="write-proof">Writing the proof</h2>
+    <p>
+        After you have created the proof, you can navigate to the editor by clicking the edit button in the proof list
+        of the 'Home' page. This opens the editor page while also opening the corresponding proof-harness and
+        preselcting the hints for the given function.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-1.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-1.png') }}" , alt="Edit Proof 1" />
+    </a>
+    <p>
+        The editor page is devided into three sections. The left section contains the directory tree, the middle section
+        contains the actual editor which should now display the proof-harness and the right section contains the hints.
+        The proof-harness is where you will be doing most of your work when writing a proof and the hint section
+        contains information that is generally usefull for writing a proof. The proof-harness template also contains a
+        couple of hints on what needs to be done.
+    </p>
+    <p>
+        As suggested by the proof-harness, let's start by including the header file with the forward declaration of the
+        function we want to prove. You may either use the directory tree or the Doxygen page to find the corresponding
+        header file. If there is no header file with a forward declaration, you may add your own directly to the
+        proof-harness file. We also include the <span class="code">assert.h</span> header file, which will later allow
+        us to check for custom properties as part of our proof.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-2.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-2.png') }}" , alt="Edit Proof 2" />
+    </a>
+    <p>
+        Next, we need to declare all the arguments and external variables that are accessed by the function. The
+        'Function Context' part of the hint section lists all the things that we need to declare. In our case, we simply
+        need to declare two pointers of type <span class="code">unsigned char</span> and a macro definition called
+        <span class="code">MD5_DIGEST_LENGTH</span>.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-3.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-3.png') }}" , alt="Edit Proof 3" />
+    </a>
+    <p>
+        External references such as the <span class="code">MD5_DIGEST_LENGTH</span> macro definition can either be
+        included in the proof-harness if they are declared in a header file or they can be copied from the source file
+        directly into the proof-harness. In the case of external function references (i.e. functions further down the
+        callgraph) that you don't want to be part of the proof, you can simply create a stub in the proof-harness.
+        Luckily, in our case the <span class="code">MD5_DIGEST_LENGTH</span> macro is declared in the
+        <span class="code">helpers/cassis_utilities.h</span> header file which we already included, so we don't need to
+        do anything here.
+    </p>
+    <p>
+        To create the two <span class="code">unsigned char</span> pointers, we have two options: we can either create
+        two arrays of appropriate size on the stack, or we can use <span class="code">malloc</span> to allocate memory.
+        Both are equally valid options, but for educational purposes we will use the
+        <span class="code">malloc</span> approach.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-4.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-4.png') }}" , alt="Edit Proof 4" />
+    </a>
+    <p>
+        Since CBMC checks for memory safety, and <span class="code">malloc</span> might fail for various reasons, we
+        need to tell CBMC to assmue that our memory allocations were successful. This is something that should only be
+        done in the proof setup and not in the actual source code. We can do this by using the
+        <span class="code">__CPROVER_assume(...)</span> macro.
+    </p>
+    <p>
+        Additionally, we don't want to specify the content of our two input buffers. CBMC should check every possible
+        combination of values nondeterministically. We can achieve this by using the
+        <span class="code">__CPROVER_havoc_object(...)</span> macro.
+    </p>
+    <p>
+        For more information on available CPROVER functions, check the
+        <a href="https://www.cprover.org/cprover-manual/api/" target="_blank">CPROVER Manual</a> and the
+        <a href="https://diffblue.github.io/cbmc/" target="_blank">CPROVER Documentation</a>.
+    </p>
+    <p>
+        Also, when determining the bounds (e.g. upper and lower bound) for function arguments, it is often useful to
+        check how the function is being called in the source code. For this purpose, Cassis-Verif displays the 'inverse
+        callgraph' in the hint section. This is a callgraph that shows you where the function is being called. However,
+        in our example this is not necessary, as the function only takes two pointers as arguments.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-5.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-5.png') }}" , alt="Edit Proof 5" />
+    </a>
+    <p>
+        The function in our example also returns a value depending on the result of the buffer comparison (0 if the
+        buffers are equal and a negative value otherwise). In addition to memory safety, we can also prove this
+        assumption. This works similar to unit testing, but with the benefit of 'testing' all possible input values
+        instead of only a select few. We can do this by using the
+        <span class="code">__CPROVER_array_equal(...)</span> macro and by inserting corresponding
+        <span class="code">assert</span> statements.
+    </p>
+    <a href="{{ url_for('static', path='images/edit-proof-6.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-6.png') }}" , alt="Edit Proof 6" />
+    </a>
+    <p>
+        Finally we've reached the end of writing the proof-harness. Make sure you save the proof-harness by hitting
+        <span class="code">Ctrl + S</span>.
+    </p>
+    <p>
+        Before we can run the proof though, we need to make one small adjustment to the proof
+        <span class="code">Makefile</span>. Since CBMC works by unwinding loops, we need to tell it how many times it
+        has to unwind. This is done by setting the <span class="code">UNWINDSET</span> variable in the
+        <span class="code">Makefile</span> for every loop in our proof. The 'Loop Unwinding' part of the hint section
+        lists all the loops in our proof with their corresponding name. In certain cases (e.g. when creating stubs which
+        contain loops) the list might not be up-to-date. In this case you can simply hit the 'Refresh' button at the top
+        of the hint section. Adding the <span class="code">UNWINDSET</span> variable is as simple as copy-pasting the
+        loop name from the hint section into the <span class="code">Makefile</span> and setting the number of unwinds.
+        Make sure you save the <span class="code">Makefile</span> by hitting <span class="code">Ctrl + S</span>.
+    </p>
+    <p><b>Important: </b>the number of unwinds must be 1 more than the actual number of iterations!</p>
+    <a href="{{ url_for('static', path='images/edit-proof-7.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/edit-proof-7.png') }}" , alt="Edit Proof 7" />
+    </a>
+    <h2 id="run-proof-and-check-results">Running the proof and checking the results</h2>
+</main>
+{% endblock %}

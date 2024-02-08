@@ -177,13 +177,13 @@ async def editor(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("editor.html", context)
 
 
-@pages.route("/guide")
-async def guide(request: Request) -> HTMLResponse:
-    log.info("Rendering guide page")
+@pages.route("/howto")
+async def howto(request: Request) -> HTMLResponse:
+    log.info("Rendering howto page")
 
     context = {
-        "title": "Guide | Cassis-Verif",
+        "title": "How To | Cassis-Verif",
         "request": request,
     }
 
-    return templates.TemplateResponse("guide.html", context)
+    return templates.TemplateResponse("howto.html", context)
