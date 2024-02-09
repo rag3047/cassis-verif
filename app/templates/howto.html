@@ -11,7 +11,6 @@
 {% block content %}
 <main class="content">
     <h1>How to create a simple proof</h1>
-    <p>Table of contents:</p>
     <ol>
         <li><a href="#select-function">Selecting a function to prove</a></li>
         <li><a href="#write-proof">Writing the proof</a></li>
@@ -150,5 +149,54 @@
         <img src="{{ url_for('static', path='images/edit-proof-7.png') }}" , alt="Edit Proof 7" />
     </a>
     <h2 id="run-proof-and-check-results">Running the proof and checking the results</h2>
+    <p>
+        Now that we have written the proof-harness and adjusted the <span class="code">Makefile</span>, we can run the
+        proof. This is done by navigating back to the 'Home' page and clicking the 'Run Proofs' button in the proof
+        list. It is worth noting that before running the proof, the proof list does not display any result statistics
+        and the 'Report' button is disabled. Also, the 'Job History' does not yet contain any entries.
+    </p>
+    <a href="{{ url_for('static', path='images/run-proof-1.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/run-proof-1.png') }}" , alt="Run Proof 1" />
+    </a>
+    <p>
+        After clicking the 'Run Proofs' button, the 'Job History' will contain an entry for the proof that was just
+        started and the 'Current Task' indicator will show a progress indicator while the proofs are being executed. In
+        our example, this should only take a couple of seconds, but as the number of proofs (and their complexity)
+        increases, this can take up to several hours.
+    </p>
+    <p>
+        Additionally, you will see the output of the current proof run being written to the output console at the bottom
+        of the screen. Unfortunately, this is currently the only way to debug compilation errors and warnings. In a
+        future version you should be able to do this on a pre-proof basis and without actually running the proof.
+    </p>
+    <a href="{{ url_for('static', path='images/run-proof-2.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/run-proof-2.png') }}" , alt="Run Proof 2" />
+    </a>
+    <p>
+        Once the proof run is complete, the 'Current Task' indicator will disappear and the statistics and 'Report'
+        button in the proof list will be available (a page refresh might be required). In our example we see that the
+        proof failed with 2 errors, but we achieved 100% code coverage. To get more information about the errors, we
+        click on the 'Report' button.
+    </p>
+    <a href="{{ url_for('static', path='images/run-proof-3.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/run-proof-3.png') }}" , alt="Run Proof 3" />
+    </a>
+    <p>
+        To access statistics and reports of previous proof runs, you can click on their GUID/Name in the 'Job History'
+        to get to the litani dashboard. In the litani dashboard you can then click on the report entry of the
+        corresponding proof. Finally you have to select the html report.
+    </p>
+    <a href="{{ url_for('static', path='images/run-proof-4.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/run-proof-4.png') }}" , alt="Run Proof 4" />
+    </a>
+    <p>
+        In the CBMC report, we can see that both errors stem from dereferencing pointers outside the array bounds.
+        According to the C Standard, this is undefined behavior and should probably be avoided. By clicking on the
+        'trace' link, we even get detailed information of the execution path that led to the error. It is now up to us
+        to fix the errors in the source code and rerun the proof.
+    </p>
+    <a href="{{ url_for('static', path='images/run-proof-5.png') }}" target="_blank">
+        <img src="{{ url_for('static', path='images/run-proof-5.png') }}" , alt="Run Proof 5" />
+    </a>
 </main>
 {% endblock %}

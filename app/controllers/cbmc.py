@@ -1,5 +1,6 @@
 import re
 import json
+import psutil
 
 from typing import Literal
 from os import getenv, remove, linesep
@@ -12,7 +13,7 @@ from pathlib import Path
 from shutil import rmtree, make_archive, copytree
 from cbmc_starter_kit import setup_proof
 from asyncio import sleep
-from asyncio.subprocess import Process, create_subprocess_exec, PIPE, DEVNULL
+from asyncio.subprocess import Process, create_subprocess_exec, PIPE
 from datetime import datetime, timezone
 from io import TextIOWrapper
 
@@ -328,15 +329,16 @@ async def cancel_cbmc_verification_task(tasks: BackgroundTasks) -> None:
     if CBMC_PROOFS_TASK is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Verification Task not running")
 
-    # TODO: fix this
-    CBMC_PROOFS_TASK.kill()
+    # Note: for some weird reaseon CBMC_PROOFS_TASK.terminate() does not actually terminate
+    #       the process (might be because the subprocess is waiting on subprocess.run() itself).
+    #       Therefore, we need to manually terminate the process and all its children.
+    # TODO: Currently, this leaves a bunch of zombie processes behind, which should probably be
+    #       fixed at some point.
 
-    # tasks.add_task(lambda: )
-
-    # # remove cancelled proof run
-    # TODO fix: maybe use background task instead?
-    # proof_runs = await get_cbmc_verification_task_runs()
-    # rmtree(Path(PROOF_ROOT) / "output/litani/runs" / proof_runs[0].name)
+    proc = psutil.Process(CBMC_PROOFS_TASK.pid)
+    proc.terminate()
+    for child in proc.children(recursive=True):
+        child.terminate()
 
 
 @router.websocket("/task/output")
@@ -414,7 +416,7 @@ async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
             start_times.append(start_time.astimezone())
 
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            start_times.append(datetime.fromtimestamp(run.stat().st_ctime))
+            start_times.append(datetime.fromtimestamp(run.stat().st_ctime).astimezone())
 
     results = [
         CBMCResult(

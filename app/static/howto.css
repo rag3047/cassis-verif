@@ -46,3 +46,12 @@ img {
 li {
     margin-bottom: 0.25rem;
 }
+
+h1 {
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 2rem;
+    margin-top: 4rem;
+}
