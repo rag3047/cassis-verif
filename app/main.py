@@ -11,8 +11,9 @@ from importlib import import_module
 from .utils.models import HTTPError
 from .pages import pages
 
+app_path = getenv("APP_PATH", "")
 
-app = FastAPI()
+app = FastAPI(root_path=app_path)
 app.debug = getenv("DEBUG", "").lower() in ("true", "y", "yes", "1", "on")
 
 log_level = getenv("LOG_LEVEL", "INFO").upper() if not app.debug else "DEBUG"
@@ -28,6 +29,7 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 log.info(f"Log level set to: {log_level}")
+log.info(f"App path: {app_path}")
 
 # dynamically load routes from controllers
 controller_dir = Path(__file__).parent / "controllers"

@@ -39,5 +39,5 @@ async def get_hints(type: str, name: str) -> Hint:
     elif type == "macro":
         return await get_macro_hint(name)
     else:
-        log.warning(f"Unknown type {type}")
+        log.warning(f"Unsupported type '{type}'")
         return Hint(hint=None)

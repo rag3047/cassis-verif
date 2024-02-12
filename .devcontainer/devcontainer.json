@@ -1,0 +1,53 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
+{
+    "name": "Existing Dockerfile",
+    "build": {
+        // Sets the run context to one level up instead of the .devcontainer folder.
+        "context": "..",
+        // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+        "dockerfile": "../Dockerfile",
+        "args": {
+            "PRESET": "cassis"
+        }
+    },
+
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "workspaceFolder": "/workspace",
+    "overrideCommand": false,
+
+    // link the app folder from workspace mount, which allows uvicorn to hot-reload on editing files
+    // changes outside the "app" folder will require rebuilding the dev container
+    "postCreateCommand": "rm -r /cassis-verif/app && ln -sf /workspace/app /cassis-verif/app",
+
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {},
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    "forwardPorts": [80],
+
+    // Uncomment the next line to run commands after the container is created.
+    // "postCreateCommand": "cat /etc/os-release",
+
+    // Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.debugpy",
+                "ms-python.black-formatter",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    },
+
+    // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "devcontainer"
+
+    "containerEnv": {
+        "APP_PATH": "",
+        "DEBUG": "true",
+        "LOG_LEVEL": "info",
+        "USE_PREBUILT_HINTS": "true"
+    }
+}

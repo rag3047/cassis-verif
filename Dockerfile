@@ -61,6 +61,7 @@ ARG PRESET
 EXPOSE 80
 
 # The following ENV vars can be modified using a .env file
+ENV APP_PATH=""
 ENV DEBUG=false
 ENV LOG_LEVEL=info
 ENV USE_PREBUILT_HINTS=true

@@ -57,7 +57,7 @@
                     <button
                         class="button"
                         {{ 'disabled' if not _stats.is_complete }}
-                        onclick="open_latest_report('{{ proof.name }}')"
+                        onclick="window.open('{{ proof.report_link }}', '_blank')"
                     >Report</button>
                     <a 
                         class="button"
@@ -100,7 +100,7 @@
                     {% if results | length > 0 %}
                     {% for result in results %}
                     <li class="table-item">
-                        <span class="width-25">{{ result.start_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        <span class="width-25">{{ result.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                         <a 
                             class="width-50" 
                             href="{{ url_for('results') }}?version={{ result.name }}"
@@ -199,6 +199,9 @@
 
 <!-- prettier-ignore -->
 {% block script %}
+<script>
+    WS_URL = "{{ url_for('get_cbmc_verification_task_output') }}";
+</script>
 <script src="{{ url_for('static', path='home.js') }}" async defer></script>
 {% endblock %}
 

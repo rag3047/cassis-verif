@@ -93,7 +93,7 @@ async function update_git_config(event) {
 
     let response;
     try {
-        response = await fetch("api/v1/git/config", {
+        response = await fetch(`api/v1/git/config`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -128,7 +128,7 @@ async function update_git_config(event) {
 async function show_update_git_config_modal() {
     let response;
     try {
-        response = await fetch("api/v1/git/config").then((res) => res.json());
+        response = await fetch(`api/v1/git/config`).then((res) => res.json());
     } catch (err) {
         console.error(err);
         alert(`Failed to update git config, check console for details.`);
@@ -184,7 +184,7 @@ async function pull_sources() {
 
     git_pull_modal_status.textContent = "Pulling sources";
     try {
-        response = await fetch("api/v1/git/pull", {
+        response = await fetch(`api/v1/git/pull`, {
             method: "POST",
         });
     } catch (err) {
@@ -202,7 +202,7 @@ async function pull_sources() {
 
     git_pull_modal_status.textContent = "Rebuilding doxygen docs";
     try {
-        response = await fetch("api/v1/doxygen/build", {
+        response = await fetch(`api/v1/doxygen/build`, {
             method: "POST",
         });
     } catch (err) {
@@ -431,7 +431,8 @@ const output_console = document.querySelector(".console");
 const task_status_spinner = document.querySelector(".task-status-spinner");
 const current_task_status_indicator = document.querySelector("#current-task-status");
 
-const ws = new WebSocket(`ws://${window.location.host}/api/v1/cbmc/task/output`);
+// WS_URL ist defined in home.html template
+const ws = new WebSocket(WS_URL);
 
 ws.onmessage = (event) => {
     output_console.textContent += event.data;
@@ -448,10 +449,6 @@ ws.onclose = () => {
 //---------------------------------------------------------------------------------------------------------
 // Utils
 //---------------------------------------------------------------------------------------------------------
-
-function open_latest_report(proof_name) {
-    window.open(`results?file-path=artifacts/${proof_name}/report/html/index.html`, "_blank");
-}
 
 let timer;
 function debounce(func, timeout = 300) {

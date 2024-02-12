@@ -19,7 +19,7 @@ window.addEventListener("beforeunload", (event) => {
 let editor = null;
 let selected_file = null;
 
-require.config({ paths: { vs: "static/monaco-editor/min/vs" } });
+require.config({ paths: { vs: `static/monaco-editor/min/vs` } });
 require(["vs/editor/editor.main"], async function () {
     editor = monaco.editor.create(document.getElementById("editor"), {
         theme: "vs-dark",
@@ -58,7 +58,7 @@ async function on_file_selected(path) {
         sessionStorage.setItem(current_model_uri, JSON.stringify(current_view_state));
     }
 
-    const uri = "api/v1/files/" + encodeURIComponent(path);
+    const uri = `api/v1/files/` + encodeURIComponent(path);
     let model = monaco.editor.getModel(uri);
     let view_state = null;
 
@@ -275,7 +275,7 @@ let tree_view = null;
 
 async function build_directory_tree() {
     const root = new TreeNode("root");
-    const entries = await fetch("api/v1/files").then((res) => res.json());
+    const entries = await fetch(`api/v1/files`).then((res) => res.json());
     let selected_path = null;
 
     for (const entry of entries) {
@@ -742,7 +742,7 @@ async function refresh_callgraphs(graphs) {
     }
 
     doxygen_link.href = "doxygen?href=" + encodeURIComponent(graphs.file_href);
-    const prefix = "api/v1/doxygen/docs/";
+    const prefix = `api/v1/doxygen/docs/`;
 
     if (graphs.callgraph) {
         cgraph_link.classList.remove("hidden");
@@ -883,7 +883,7 @@ async function create_entry(event) {
     let response;
 
     try {
-        response = await fetch("api/v1/files", {
+        response = await fetch(`api/v1/files`, {
             method: "POST",
             body: JSON.stringify({
                 type: create_entry_type_span.dataset.type,
