@@ -28,8 +28,8 @@ logging.basicConfig(
 )
 
 log = logging.getLogger(__name__)
-log.info(f"Log level set to: {log_level}")
 log.info(f"App path: {app_path}")
+log.info(f"Log level set to: {log_level}")
 
 # dynamically load routes from controllers
 controller_dir = Path(__file__).parent / "controllers"
