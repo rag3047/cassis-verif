@@ -4,3 +4,5 @@
 # exclude confidential data
 presets/cassis/sdd.pdf
 presets/cassis/src.tgz
+
+__pycache__/

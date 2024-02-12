@@ -44,4 +44,9 @@ if [[ ! -f "sdd.pdf" ]] && [[ -f "$PRESET_DIR/sdd.pdf" ]]; then
     mv "$PRESET_DIR/sdd.pdf" .
 fi
 
-exec "$@"
+if echo "true y yes 1 on" | grep -w -q "${DEBUG,,}"; then
+    echo "Entrypoint: Running in DEBUG Mode: enabling hot-reload!"
+    exec "$@" "--reload"
+else
+    exec "$@"
+fi
