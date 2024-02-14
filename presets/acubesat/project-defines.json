@@ -1,10 +1,9 @@
 {
     "includes": [
-        "$(PRESET_DIR)/includes",
-        "$(PRESET_DIR)/includes/inc ",
-        "$(PRESET_DIR)/includes/inc/Platform ",
-        "$(PRESET_DIR)/includes/inc/FreeRTOSTasks ",
-        "$(PRESET_DIR)/includes/inc/Platform/Parameters ",
+        "$(SRCDIR)/inc ",
+        "$(SRCDIR)/inc/Platform ",
+        "$(SRCDIR)/inc/FreeRTOSTasks ",
+        "$(SRCDIR)/inc/Platform/Parameters ",
         "$(SRCDIR)/src ",
         "$(SRCDIR)/src/config ",
         "$(SRCDIR)/src/config/default ",

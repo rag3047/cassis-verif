@@ -20,6 +20,14 @@
     // changes outside the "app" folder will require rebuilding the dev container
     "postCreateCommand": "rm -r /cassis-verif/app && ln -sf /workspace/app /cassis-verif/app",
 
+    "mounts": [
+        {
+            "source": "cassis-verif-data",
+            "target": "/cassis-verif/data",
+            "type": "volume"
+        }
+    ],
+
     // Features to add to the dev container. More info: https://containers.dev/features.
     // "features": {},
 

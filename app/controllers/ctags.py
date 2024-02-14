@@ -85,7 +85,7 @@ def _function_tags(repo="."):
         files_cpp, _ = pipe.communicate()
         files += files_cpp
 
-    if files is None:  # run() logs errors on debug
+    if not files:  # run() logs errors on debug
         return []
 
     # legacy ctags does not give the kind of a symbol
