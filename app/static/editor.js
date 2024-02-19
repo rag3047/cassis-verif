@@ -21,8 +21,13 @@ let selected_file = null;
 
 require.config({ paths: { vs: `static/monaco-editor/min/vs` } });
 require(["vs/editor/editor.main"], async function () {
+    let theme = "vs";
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        theme = "vs-dark";
+    }
+
     editor = monaco.editor.create(document.getElementById("editor"), {
-        theme: "vs-dark",
+        theme: theme,
         value: "",
         language: "plaintext",
         automaticLayout: true,

@@ -1,4 +1,4 @@
-.header {
+body > .header {
     box-shadow: 0 -5px 10px 5px black;
     z-index: 1;
 }
@@ -11,4 +11,273 @@
 #result-frame {
     border: none;
     width: 100%;
+}
+
+/* The following styles are applied inside the results iframe */
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+}
+
+#content {
+    width: 800px;
+}
+
+#content a {
+    color: var(--link-color) !important;
+    text-decoration: none;
+}
+
+#content a:hover {
+    text-decoration: underline !important;
+}
+
+#title {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    border-radius: 0px;
+    color: var(--text-color);
+}
+
+.pipeline-row {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    border-radius: 0px;
+}
+
+.job-output-content {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    border-radius: 0px;
+}
+
+.downloads {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    border-radius: 0px;
+}
+
+.run-info ul li {
+    color: var(--text-color);
+}
+
+#artifact-list {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    margin-top: 1rem;
+}
+
+#artifact-list ul {
+    padding: 0;
+    margin: 1.5rem;
+    border: 2px solid var(--border-color);
+}
+
+#artifact-list ul li {
+    list-style: none;
+    border-bottom: 2px solid var(--border-color);
+}
+
+#artifact-list ul li:last-child {
+    border-bottom: none;
+}
+
+#artifact-list ul li:nth-child(odd) {
+    background-color: var(--bg-dark);
+}
+
+#artifact-list ul li a {
+    padding: 0.5rem;
+    display: block;
+}
+
+body > h1 {
+    display: none;
+}
+
+body > .coverage {
+    margin: 2rem;
+    padding: 1.5rem;
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+
+    & > h2 {
+        margin-top: 0;
+    }
+
+    & a {
+        color: var(--link-color);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+
+    & table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 2px solid var(--border-color);
+
+        & tr:nth-child(odd) {
+            background-color: var(--bg-dark);
+        }
+
+        & th,
+        td {
+            padding: 0.5rem;
+            text-align: left;
+            border: 2px solid var(--border-color);
+        }
+    }
+}
+
+.warnings {
+    margin: 0 2rem 2rem 2rem;
+    padding: 1.5rem;
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+
+    & > h2 {
+        margin-top: 0;
+    }
+
+    & a {
+        color: var(--link-color);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+
+    & > ul {
+        padding: 0;
+        margin: 0;
+        border: 2px solid var(--border-color);
+    }
+
+    & li {
+        list-style: none;
+    }
+
+    & li {
+        list-style: none;
+        padding: 0.5rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    & li:last-child {
+        border-bottom: none;
+    }
+
+    & li:nth-child(odd) {
+        background-color: var(--bg-dark);
+    }
+}
+
+.errors {
+    & > ul {
+        padding: 0;
+        margin: 0 0 2rem 0;
+        border: 2px solid var(--border-color);
+    }
+
+    & > ul:last-child {
+        margin-bottom: 0;
+    }
+
+    & li:has(> ul) {
+        padding: 1rem 0 1rem 1rem;
+        border-bottom: none;
+    }
+
+    & ul ul {
+        padding: 0;
+        /* padding-left: 0.5rem; */
+    }
+
+    & li:not(li:has(ul)) {
+        padding: 0.5rem;
+        margin-right: 1rem;
+        border: 2px solid var(--border-color);
+        border-top: none;
+    }
+
+    & li:not(li:has(ul)):first-child {
+        border-top: 2px solid var(--border-color);
+        margin-top: 0.5rem;
+    }
+
+    & li:not(li:has(ul)):nth-child(odd) {
+        background-color: var(--bg-light);
+    }
+
+    & li:not(li:has(ul)):last-child {
+        border-bottom: 2px solid var(--border-color);
+    }
+}
+
+.code {
+    margin-top: 2rem;
+
+    & a {
+        color: var(--link-color);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+}
+
+body > h2 {
+    margin: 2rem;
+    margin-bottom: 0;
+}
+
+#trace-header {
+    margin: 2rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-light);
+
+    & a {
+        color: var(--link-color);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+}
+
+.trace {
+    margin: 2rem;
+    margin-top: 0;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-light);
+
+    & a {
+        color: var(--link-color);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+}
+
+.trace .function-body {
+    border-left-color: var(--link-color) !important;
+}
+
+.step .header {
+    color: unset;
+    background-color: unset;
+    border-bottom: unset;
+    height: unset;
+    min-height: unset;
+    max-height: unset;
+    padding: unset;
+    display: block;
 }

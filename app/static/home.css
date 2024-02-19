@@ -8,7 +8,7 @@
 }
 
 .proofs {
-    color: white;
+    color: var(--text-color);
     background-color: var(--bg-dark);
     border-right: 2px solid var(--border-color);
     overflow-y: auto;
@@ -28,7 +28,7 @@
 }
 
 .task {
-    color: white;
+    color: var(--text-color);
     background-color: var(--bg-light);
     width: 60vw;
     display: flex;
@@ -48,7 +48,7 @@
 }
 
 .console {
-    color: white;
+    color: var(--text-color);
     height: 30%;
     padding: 1rem;
     overflow-y: auto;

@@ -46,7 +46,7 @@ fi
 
 if echo "true y yes 1 on" | grep -w -q "${DEBUG,,}"; then
     echo "Entrypoint: Running in DEBUG Mode: enabling hot-reload!"
-    exec "$@" "--reload"
+    exec "$@" "--reload" "--reload-dir" "app"
 else
     exec "$@"
 fi
