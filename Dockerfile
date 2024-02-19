@@ -9,6 +9,13 @@ FROM ubuntu:${UBUNTU_VERSION} AS default
 RUN mkdir /output
 
 #--------------------------------------
+# SUCHAI Preset
+#--------------------------------------
+
+FROM ubuntu:${UBUNTU_VERSION} AS suchai
+RUN mkdir /output
+
+#--------------------------------------
 # Cassis Preset
 #--------------------------------------
 
