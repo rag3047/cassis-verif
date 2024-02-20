@@ -1,0 +1,20 @@
+{
+    "includes": [
+        "$(SRCDIR)/apps/simple/include",
+        "$(SRCDIR)/apps/suchai/include",
+        "$(SRCDIR)/include",
+        "$(SRCDIR)/src/system/include",
+        "$(SRCDIR)/src/os/include",
+        "$(SRCDIR)/src/lib/utils/include",
+        "$(SRCDIR)/src/lib/storage/include",
+        "$(SRCDIR)/src/lib/libcsp/include",
+        "$(SRCDIR)/src/lib/libcsp/libcsp/include",
+        "$(SRCDIR)/src/lib/igrf/include",
+        "$(SRCDIR)/src/lib/sgp4/src/c",
+        "$(SRCDIR)/src/lib/linenoise",
+        "$(SRCDIR)/src/drivers/include",
+        "$(SRCDIR)/src/drivers/x86/include"
+    ],
+    "defines": [],
+    "env": []
+}
