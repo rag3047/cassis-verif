@@ -11,6 +11,7 @@ body > .header {
 #result-frame {
     border: none;
     width: 100%;
+    background-color: white;
 }
 
 /* The following styles are applied inside the results iframe */
@@ -30,6 +31,7 @@ body {
 
 #content a:hover {
     text-decoration: underline !important;
+    background-color: unset;
 }
 
 #title {
@@ -45,6 +47,14 @@ body {
     border-radius: 0px;
 }
 
+.pipeline-icon polygon:last-child {
+    fill: var(--link-color);
+}
+
+.pipeline-icon polygon:last-child:hover {
+    fill: var(--text-color);
+}
+
 .job-output-content {
     background-color: var(--bg-light);
     border: 2px solid var(--border-color);
@@ -55,6 +65,10 @@ body {
     background-color: var(--bg-light);
     border: 2px solid var(--border-color);
     border-radius: 0px;
+
+    & li {
+        list-style: none;
+    }
 }
 
 .run-info ul li {
@@ -280,4 +294,9 @@ body > h2 {
     max-height: unset;
     padding: unset;
     display: block;
+}
+
+#depgraph-preview > img {
+    background-color: white;
+    border: 2px solid var(--border-color);
 }
