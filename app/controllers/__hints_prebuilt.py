@@ -12,7 +12,7 @@ HINTS_DB: dict[str, dict[str, str]] = {}
 
 if not HINTS_DIR.exists():
     log.warn(
-        f"No Hints directory found. Consider using the Hints-API or adding a hints.tgz file the project preset."
+        f"No Hints directory found. Consider using the Hints-API or adding a hints.tgz file to the project preset."
     )
 
 else:
