@@ -41,6 +41,7 @@ Currently the following presets are available:
   - Prebuilt RTEMS sources.
   - Prebuilt AI Hints.
   - Preconfigured compiler flags for RTEMS.
+- **suchai**: TODO
 
 ### Custom Presets
 
