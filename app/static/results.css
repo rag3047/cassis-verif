@@ -300,3 +300,7 @@ body > h2 {
     background-color: white;
     border: 2px solid var(--border-color);
 }
+
+.stage-artifacts-link.success {
+    background-color: transparent !important;
+}
