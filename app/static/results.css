@@ -270,6 +270,7 @@ body > h2 {
     margin-top: 0;
     border: 2px solid var(--border-color);
     background-color: var(--bg-light);
+    overflow-x: clip;
 
     & a {
         color: var(--link-color);

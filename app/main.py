@@ -13,7 +13,7 @@ from .pages import pages
 
 app_path = getenv("APP_PATH", "")
 
-app = FastAPI(root_path=app_path)
+app = FastAPI(title="CaSSIS-Verif", root_path=app_path)
 app.debug = getenv("DEBUG", "").lower() in ("true", "y", "yes", "1", "on")
 
 log_level = getenv("LOG_LEVEL", "INFO").upper() if not app.debug else "DEBUG"
