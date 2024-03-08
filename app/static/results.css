@@ -275,10 +275,13 @@ body > h2 {
     & a {
         color: var(--link-color);
         text-decoration: none;
+        border: none;
+        padding: initial;
     }
 
     & a:hover {
         text-decoration: underline;
+        border: none;
     }
 }
 
