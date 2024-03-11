@@ -1,3 +1,11 @@
+/*
+    Note: this code is used to output the memory footprint of both the parameter_tables array and the the gds_persistent_storage_t struct.
+    Use the following command to compile the code:
+
+        gcc -o memory_footprint memory_footprint.c
+
+    Running the 'memory_footprint' executable will output the memory footprint in number of bytes.
+*/
 
 #include <stdio.h>
 #include <stdint.h>
