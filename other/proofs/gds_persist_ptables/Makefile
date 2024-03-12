@@ -9,7 +9,7 @@ DEFINES +=
 INCLUDES +=
 
 REMOVE_FUNCTION_BODY +=
-UNWINDSET += internal_generate_md5_digest.0:17
+UNWINDSET += 
 
 PROOF_SOURCES += $(PROOFDIR)/$(HARNESS_FILE).c
 PROJECT_SOURCES += $(SRCDIR)/src/cassis_global_datastorage.c

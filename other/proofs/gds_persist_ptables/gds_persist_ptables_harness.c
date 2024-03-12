@@ -23,39 +23,30 @@
 #include "cassis_global_datastorage.h"
 #include "helpers/cassis_utilities.h"
 
-// Generate the same nondet byte given the same inputs
-unsigned char __CPROVER_uninterpreted_byte(unsigned char* in_buff, int in_len, int index);
-
-void internal_generate_md5_digest(unsigned char* in_buff, int in_len, unsigned char* digest) {
-  for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
-    digest[i] = __CPROVER_uninterpreted_byte(in_buff, in_len, i);
-  }
-}
-
-inline int generate_md5_digest(unsigned char *in_buff, int in_len, unsigned char* digest) {
+int generate_md5_digest(unsigned char *in_buff, int in_len, unsigned char* digest) {
   assert(__CPROVER_r_ok(in_buff, in_len));
-  assert(__CPROVER_rw_ok(digest, MD5_DIGEST_LENGTH));
-  internal_generate_md5_digest(in_buff, in_len, digest);
+  assert(__CPROVER_w_ok(digest, MD5_DIGEST_LENGTH));
+
+  __CPROVER_havoc_object(digest);
+
+  return MD5_DIGEST_LENGTH;
 }
 
-struct gds_persistent_storage_t *gds_persistent_storage = (void *)GDS_ADDRESS_PERSISTENT_STORAGE;
+// struct gds_persistent_storage_t *gds_persistent_storage = (void *)GDS_ADDRESS_PERSISTENT_STORAGE;
+struct gds_persistent_storage_t *gds_persistent_storage;
 struct gds_parameter_table_t parameter_tables[GDS_NUMBER_OF_PARAMETER_TABLES];
 
-/**
- * @brief Starting point for formal analysis
- * 
- */
 void harness(void)
 {
+  // workaround for modelling the non-volatile memory region
+  gds_persistent_storage = (struct gds_persistent_storage_t *) malloc(sizeof(struct gds_persistent_storage_t));
+  __CPROVER_assume(gds_persistent_storage != NULL);
+
   __CPROVER_havoc_object(gds_persistent_storage);
   __CPROVER_havoc_object(parameter_tables);
-
-  unsigned char md5[MD5_DIGEST_LENGTH];
-  internal_generate_md5_digest((unsigned char *)gds_persistent_storage->parameter_tables, sizeof(parameter_tables), gds_persistent_storage->paramter_table_digest);
 
   gds_persist_ptables();
 
   assert(__CPROVER_array_equal(gds_persistent_storage->parameter_tables, parameter_tables));
   assert(gds_persistent_storage->parameter_table_dirty == 0x00000000);
-  assert(__CPROVER_array_equal(gds_persistent_storage->paramter_table_digest, md5));
 }

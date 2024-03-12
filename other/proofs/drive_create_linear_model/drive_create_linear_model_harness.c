@@ -48,9 +48,6 @@ double __builtin_sqrt(double x) {
  */
 void harness(void)
 {
-
-  /* Insert argument declarations */
-
   /*
     Note: We know from 'cassis_rotation_manager.c' that 'drive_create_linear_model' is only being
           called in 'ROTATION_MOVEMENT_PROFILE_FAST'. Therefore we know the exact values of 
@@ -107,7 +104,7 @@ void harness(void)
     assert(drive_model->s_d >= 0);
     assert(drive_model->s_d <= max_steps_decelerating);
 
-    assert(__CPROVER_fabs(drive_model->s_a - drive_model->s_d) < eps);
+    assert(drive_model->s_a == drive_model->s_d);
 
     assert(drive_model->v_top > 0);
     // Apparently v_top is not capped to later indicate an invalid speed config param.
