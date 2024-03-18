@@ -16,7 +16,6 @@
  *   - include the types needed to declare function arguments
  */
 
-// #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -33,8 +32,8 @@ int generate_md5_digest(unsigned char *in_buff, int in_len, unsigned char* diges
 }
 
 // struct gds_persistent_storage_t *gds_persistent_storage = (void *)GDS_ADDRESS_PERSISTENT_STORAGE;
-struct gds_persistent_storage_t *gds_persistent_storage;
-struct gds_parameter_table_t parameter_tables[GDS_NUMBER_OF_PARAMETER_TABLES];
+extern struct gds_persistent_storage_t *gds_persistent_storage;
+extern struct gds_parameter_table_t parameter_tables[GDS_NUMBER_OF_PARAMETER_TABLES];
 
 void harness(void)
 {
