@@ -15,7 +15,7 @@ if [[ ! -d $CBMC_ROOT ]]; then
     echo "Entrypoint: Initializing cbmc project 'cassis-verif'"
 
     mkdir -p $CBMC_ROOT && cd $CBMC_ROOT
-    python3 /cassis-verif/cbmc-setup-noninteractive.py --project-name cassis-verif
+    python3 /cassis-verif/cbmc-setup-noninteractive.py --project-name CaSSIS-Verif
     cd ../..
 fi
 

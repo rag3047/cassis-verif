@@ -5,9 +5,16 @@ import psutil
 from typing import Literal
 from os import getenv, remove, linesep
 from logging import getLogger
-from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    HTTPException,
+    WebSocket,
+    status,
+    Request,
+)
 from websockets.exceptions import ConnectionClosedOK
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, UUID4
 from pathlib import Path
 from shutil import rmtree, make_archive, copytree
@@ -18,6 +25,7 @@ from datetime import datetime, timezone
 from io import TextIOWrapper
 
 from ..utils.models import HTTPError
+from ..utils.html import inject_css_links
 
 log = getLogger(__name__)
 
@@ -526,11 +534,13 @@ async def download_cbmc_verification_task_result(
     # Note: this path allows for directory browsing using relative paths (i.e. navigate the dashboard)
     "/results/{version}/{file_path:path}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
+    response_model=None,
 )
 async def get_cbmc_verification_task_result(
+    request: Request,
     version: UUID4 | Literal["latest"] = "latest",
     file_path: str | None = None,
-) -> FileResponse:
+) -> FileResponse | HTMLResponse:
     """Return results of CBMC proof execution."""
     log.info("Get CBMC verification task results")
 
@@ -551,10 +561,21 @@ async def get_cbmc_verification_task_result(
     if not path.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"File not found: {file_path}")
 
-    return FileResponse(path)
+    if path.suffix != ".html":
+        return FileResponse(path)
 
-    # media_type = "text/html" if path.suffix == ".html" else "text/plain"
-    # return FileResponse(path, media_type=media_type)
+    # inject css links to style litani dashboard pages
+    base_url = str(request.base_url)
+    css_links = [
+        f"{base_url}static/layout.css",
+        f"{base_url}static/scrollbar.css",
+        f"{base_url}static/results.css",
+    ]
+
+    log.debug(f"injecting css links: {css_links}")
+    html = inject_css_links(path.read_text(), css_links)
+
+    return HTMLResponse(content=html, status_code=200)
 
 
 @router.delete(

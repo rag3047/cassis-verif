@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+    nginx:
+        build:
+            context: .
+        image: reverse-proxy:latest
+        env_file:
+            - .env
+        ports:
+            - "65041:65041"
+        depends_on:
+            - web1
+            - web2
+            - web3
+
+    web1:
+        build:
+            context: ..
+            args:
+                - PRESET=cassis
+        image: cassis-verif:1.0.0
+        hostname: 195.134.117.145
+        environment:
+            - APP_PATH=/web1
+        env_file:
+            - .env
+        ports:
+            - ":80"
+        volumes:
+            - data1:/cassis-verif/data
+
+    web2:
+        image: cassis-verif:1.0.0
+        hostname: 195.134.117.145
+        environment:
+            - APP_PATH=/web2
+        env_file:
+            - .env
+        ports:
+            - ":80"
+        volumes:
+            - data2:/cassis-verif/data
+
+    web3:
+        image: cassis-verif:1.0.0
+        hostname: 195.134.117.145
+        environment:
+            - APP_PATH=/web3
+        env_file:
+            - .env
+        ports:
+            - ":80"
+        volumes:
+            - data3:/cassis-verif/data
+
+volumes:
+    data1:
+    data2:
+    data3:

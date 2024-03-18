@@ -9,6 +9,7 @@ This repo contians the source code of *Cassis-Verif*, a tool developed as part o
 - The `doxygen` folder contains configuration and customization for doxygen docs used in the application.
 - The `presets` folder contains presets that can be used when building the container image to pre-provision project specific configurations and resources (See [Presets](#presets)).
 - The `scripts` folder contains a variety of scripts that are used inside the container.
+- The `other` folder contains things that are not directly related to the application, such as example proofs or a basic-auth-reverse-proxy example setup.
 - The `.env.example` file contains a list of all available environment variables with explanations.
 - The `requirements.txt` file contains a list of all Python dependencies.
 
@@ -41,6 +42,7 @@ Currently the following presets are available:
   - Prebuilt RTEMS sources.
   - Prebuilt AI Hints.
   - Preconfigured compiler flags for RTEMS.
+- **suchai**: TODO
 
 ### Custom Presets
 

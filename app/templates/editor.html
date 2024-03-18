@@ -28,7 +28,11 @@
     </div>
     <div class="hints-container" onscroll="close_hint_tooltip()">
         <div class="toolbar">
-            <!-- TODO: Save Button -->
+            <button
+                id="btn-save-file"
+                class="button"
+                onclick="save_file()"
+            >Save File</button>
             <button 
                 id="btn-toggle-editor" 
                 class="button" 
@@ -74,9 +78,9 @@
                 </div>
             </div>
             <div class="hint-section callgraphs-container">
-                <h2>Callgraphs</h2>
+                <h2>Call Graphs</h2>
                 <p>
-                    The following two images depict the <b>callgraph</b> and the <b>inverse callgraph</b> 
+                    The following two images depict the <b>call graph</b> and the <b>inverse call graph</b> 
                     of the selected function. Use this information to determine possible argument values 
                     and global state, but also to decide which functions to stub out.<br/>
                     <a 
@@ -93,7 +97,7 @@
                     >Full Doxygen Docs</a>
                 </p>
                 <div class="callgraphs {{ 'hidden' if not graphs.callgraph and not graphs.inverse_callgraph }}">
-                    <h4>Callgraph</h4>
+                    <h4>Call Graph</h4>
                     <a 
                         class="cgraph-link {{ 'hidden' if not graphs.callgraph }}" 
                         target="_blank" 
@@ -102,11 +106,11 @@
                         <img 
                             class="cgraph" 
                             src="{{ url_for('get_doxygen_docs', file_path=graphs.callgraph) }}" 
-                            alt="Callgraph"
+                            alt="Call Graph"
                         />
                     </a>
                     <p class="italic {{ 'hidden' if graphs.callgraph }}">Unavailable</p>
-                    <h4>Inverse Callgraph</h4>
+                    <h4>Inverse Call Graph</h4>
                     <a 
                         class="icgraph-link {{ 'hidden' if not graphs.inverse_callgraph }}" 
                         target="_blank" 
@@ -115,13 +119,13 @@
                         <img 
                             class="icgraph" 
                             src="{{ url_for('get_doxygen_docs', file_path=graphs.inverse_callgraph) }}" 
-                            alt="Inverse Callgraph"
+                            alt="Inverse Call Graph"
                         />
                     </a>
                     <p class="italic {{ 'hidden' if graphs.inverse_callgraph}}">Unavailable</p>
                 </div>
                 <div class="callgraph-error {{ 'hidden' if graphs.callgraph or graphs.inverse_callgraph }}">
-                    <h4 class="alert danger margin-0">Callgraphs currently unavailable</h4>
+                    <h4 class="alert danger margin-0">Call Graphs currently unavailable</h4>
                 </div>
             </div>
             <div class="hint-section context-container">
@@ -136,7 +140,7 @@
                             href="https://model-checking.github.io/cbmc-training/cbmc/overview/proof-harnesses.html"
                         >More info on writing Proof Harnesses</a>
                     </p>
-                    <h4>Function Params</h4>
+                    <h4>Function Arguments</h4>
                     <ul class="table param-table">
                         <li class="table-item">
                             <div class="width-50"><h4>Name</h4></div>
@@ -171,7 +175,7 @@
                         </li>
                         {% endfor %} 
                         {% else %}
-                        <li class="table-item-empty"><h4>The selected function has no params</h4></li>
+                        <li class="table-item-empty"><h4>The selected function has no arguments</h4></li>
                         {% endif %}
                     </ul>
                     <h4>External References</h4>

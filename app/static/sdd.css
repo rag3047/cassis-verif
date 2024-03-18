@@ -27,7 +27,7 @@
     }
 
     & span {
-        color: white;
+        color: var(--text-color);
         align-self: center;
     }
 }
@@ -40,8 +40,8 @@
 
 .arrow::after {
     content: "";
-    border-bottom: 2px solid white;
-    border-right: 2px solid white;
+    border-bottom: 2px solid var(--text-color);
+    border-right: 2px solid var(--text-color);
     display: block;
     height: 5px;
     width: 5px;
@@ -71,7 +71,7 @@ input {
     border: 2px solid var(--border-color);
     border-radius: 2px;
     background-color: var(--bg-dark);
-    color: white;
+    color: var(--text-color);
     font-size: 1rem;
 }
 
@@ -82,7 +82,7 @@ input[disabled] {
 input:focus,
 input:hover {
     outline: none;
-    border-color: gray;
+    border-color: var(--hover-color);
 }
 
 input[disabled]:focus,
@@ -128,7 +128,7 @@ input[disabled]:hover {
     margin: 0;
     padding-top: 3rem;
     background-color: var(--bg-light);
-    color: white;
+    color: var(--text-color);
 }
 
 /* Hide number input arrow buttons */

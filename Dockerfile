@@ -16,6 +16,13 @@ FROM ubuntu:${UBUNTU_VERSION} AS acubesat
 RUN mkdir /output
 
 #--------------------------------------
+# SUCHAI Preset
+#--------------------------------------
+
+FROM ubuntu:${UBUNTU_VERSION} AS suchai
+RUN mkdir /output
+
+#--------------------------------------
 # Cassis Preset
 #--------------------------------------
 

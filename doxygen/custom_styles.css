@@ -1,20 +1,55 @@
 html {
     --font: Helvetica, Arial, sans-serif;
     --code-font: "Courier New", Courier, monospace;
-    --text-color: white;
-    --bg-dark: rgba(24, 24, 24, 255);
-    --bg-light: rgba(31, 31, 31, 255);
-    --border-color: rgba(38, 38, 38, 255);
+    --text-color: black;
+    --hover-color: rgba(195, 195, 195, 255);
+    --bg-dark: rgba(250, 250, 250, 255);
+    --bg-light: rgba(255, 255, 254, 255);
+    --border-color: rgba(230, 230, 230, 255);
     --danger-color: rgba(152, 70, 70, 255);
     --success-color: rgba(97, 152, 70, 255);
     --warning-color: rgba(255, 190, 70, 255);
     --info-color: rgba(87, 189, 189, 255);
     --link-color: rgba(100, 100, 204, 255);
-    /* height: 100%;
-    font-family: var(--font); */
+    font-family: var(--font);
 }
 
-/* TODO: Restyle Doxygen Docs to match app style */
+@media (prefers-color-scheme: dark) {
+    html {
+        --text-color: white;
+        --hover-color: gray;
+        --bg-dark: rgba(24, 24, 24, 255);
+        --bg-light: rgba(31, 31, 31, 255);
+        --border-color: rgba(50, 50, 50, 255);
+    }
+}
+
+body {
+    background-color: var(--bg-dark);
+}
+
+a,
+a:visited {
+    color: var(--text-color);
+}
+
+.arrow {
+    color: var(--text-color);
+}
+
+div.header {
+    background-color: var(--bg-dark);
+    background-image: none;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+#main-nav {
+    position: relative;
+    box-shadow: 0 -5px 10px 5px black;
+    z-index: 91;
+}
+
 #titlearea {
     display: none;
 }
@@ -25,14 +60,176 @@ html {
 }
 
 #doc-content {
-    max-height: calc(100vh - 36px);
-    overflow: scroll;
+    max-height: calc(100vh - 38px);
+    /* overflow: scroll; */
+    overflow: auto;
+    background-color: var(--bg-light);
+    color: var(--text-color);
+}
+
+#doc-content a,
+#doc-content a:visited {
+    color: var(--link-color);
 }
 
 #side-nav {
-    height: calc(100% - 36px) !important;
+    height: calc(100% - 38px) !important;
 }
 
 #nav-tree {
     height: 100% !important;
+    background-color: var(--bg-dark);
+    background-image: none;
+}
+
+#nav-tree .selected {
+    background-color: var(--hover-color);
+    background-image: none;
+    color: var(--text-color);
+}
+
+div.directory {
+    border: none;
+
+    & .levels span {
+        color: var(--text-color);
+    }
+
+    & tr.even {
+        background-color: var(--bg-dark);
+    }
+}
+
+table.directory {
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+
+    & tr {
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+h2.groupheader {
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.memItemRight,
+.memItemLeft {
+    background-color: var(--bg-dark);
+}
+
+.memSeparator {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.memtitle {
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    background-color: var(--bg-dark);
+    background-image: none;
+}
+
+.memproto {
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-top-right-radius: 0;
+    -webkit-border-top-right-radius: 0;
+}
+
+.memdoc {
+    background-color: var(--bg-light);
+    background-image: none;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    -webkit-border-bottom-left-radius: 0;
+    -webkit-border-bottom-right-radius: 0;
+}
+
+.paramname {
+    color: var(--info-color);
+}
+
+.mdescLeft,
+.mdescRight {
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+}
+
+pre.fragment {
+    background-color: var(--bg-dark);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.sm-dox {
+    background-image: none;
+    background-color: var(--bg-dark);
+    border-bottom: 2px solid var(--border-color);
+
+    & a {
+        background-image: none;
+        color: var(--text-color);
+    }
+
+    & a:hover {
+        background-image: none;
+        background-color: var(--hover-color);
+    }
+
+    & > li {
+        border-right: 1px solid var(--border-color);
+    }
+
+    & > li:first-child {
+        border-left: 1px solid var(--border-color);
+    }
+
+    & > li:last-child {
+        border-right: none;
+    }
+}
+
+.sm-dox a span.sub-arrow {
+    border-color: var(--text-color) transparent transparent transparent;
+}
+
+#MSearchBox {
+    border-radius: 0;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+}
+
+.MSearchBoxActive #MSearchField {
+    color: var(--text-color);
+}
+
+div.zoom {
+    border: 1px solid var(--border-color);
+    background-color: white;
+}
+
+.ui-resizable-handle {
+    background-color: var(--border-color);
+    background-image: none;
+}
+
+::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.25rem;
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(121, 121, 121, 0.4);
+    border-radius: 2px;
 }

@@ -7,7 +7,7 @@
     overflow: auto;
     background-color: var(--bg-light);
     padding: 1rem;
-    color: white;
+    color: var(--text-color);
 
     & > * {
         max-width: 60%;

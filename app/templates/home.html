@@ -44,7 +44,7 @@
                     <h2 class="entry-name">{{ proof.name }}</h2>
                     <div class="file-path">{{ proof.src | default('N/A', true) }}</div>
                     <div class="stats">
-                        <div><span>Status:</span>{{ _stats.status | title if _stats.status else 'N/A' }}</div>
+                        <div><span>Status:</span>{{ _stats.status | title if _stats.status else 'Running' if task_status.is_running else 'N/A' }}</div>
                         <div>
                             <span>Coverage:</span>{{ "{0:.0%}".format(_stats.coverage_percentage) if _stats.coverage_percentage else 'N/A' }}
                         </div>
@@ -90,7 +90,7 @@
                 </div>
             </div>
             <div class="task-history">
-                <h1>Job-History</h1>
+                <h1>Job History</h1>
                 <ul class="table width-80 results-table">
                     <li class="table-item">
                         <h4 class="width-25">Start-Time</h4>
