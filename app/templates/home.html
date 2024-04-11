@@ -108,7 +108,7 @@
                         <span class="width-25">
                             <a 
                                 class="button" 
-                                href="{{ url_for('download_cbmc_verification_task_result', version=result.name) }}"
+                                href="{{ url_for('download_verification_job_result', version=result.name) }}"
                             >Download</a>
                             <button 
                                 class="button danger delete" 
@@ -200,7 +200,7 @@
 <!-- prettier-ignore -->
 {% block script %}
 <script>
-    WS_URL = "{{ url_for('get_cbmc_verification_task_output') }}";
+    WS_URL = "{{ url_for('get_verification_job_output') }}";
 </script>
 <script src="{{ url_for('static', path='home.js') }}" async defer></script>
 {% endblock %}

@@ -33,8 +33,8 @@ DATA_DIR = getenv("DATA_DIR")
 PROOF_ROOT = getenv("PROOF_ROOT")
 CBMC_ROOT = getenv("CBMC_ROOT")
 
-CBMC_PROOFS_TASK: Process | None = None
-CBMC_PROOFS_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
+VERIFICATION_JOB: Process | None = None
+VERIFICATION_JOB_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
 
 RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
 RE_LOOP_NAME = re.compile(r"^Loop (?P<name>.+):$", re.MULTILINE)
@@ -91,7 +91,7 @@ async def get_cbmc_proofs() -> list[CBMCProof]:
     "/proofs/{proof_name}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
-async def get_cbmc_proof(proof_name: str) -> CBMCProof:
+async def get_cbmc_proof_by_name(proof_name: str) -> CBMCProof:
     """Return CBMC proof with given name."""
     log.info(f"Get CBMC proof '{proof_name}'")
 
@@ -153,12 +153,12 @@ async def delete_cbmc_proof(proof_name: str) -> None:
     """Delete CBMC proof."""
     log.info(f"Deleting CBMC proof '{proof_name}'")
 
-    if CBMC_PROOFS_TASK is not None:
+    if VERIFICATION_JOB is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             """
-            Cannot delete proof while verification task is running.
-            Wait until task is completed or cancel task.
+            Cannot delete proof while verification job is running.
+            Wait until job is completed or cancel job.
             """,
         )
 
@@ -183,19 +183,20 @@ class CBMCLoop(BaseModel):
         status.HTTP_409_CONFLICT: {"model": HTTPError},
     },
 )
-async def get_cbmc_proof_loop_info(
-    proof_name: str, rebuild: bool = False
+async def get_cbmc_loop_info(
+    proof_name: str,
+    rebuild: bool = False,
 ) -> list[CBMCLoop]:
-    """Return a list of cbmc loops."""
+    """Return a list of loops in the given cbmc proof."""
     log.info(f"Get loop info for proof '{proof_name}' ({rebuild=})")
 
-    proof = await get_cbmc_proof(proof_name)
+    proof = await get_cbmc_proof_by_name(proof_name)
     proof_dir = Path(PROOF_ROOT) / proof_name
     goto_binary = proof_dir / "gotos" / proof.harness.replace(".c", ".goto")
 
     # only build goto binary if it doesn't exist or rebuild is True
     if rebuild or not goto_binary.exists():
-        if CBMC_PROOFS_TASK is not None:
+        if VERIFICATION_JOB is not None:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 """Cannot rebuild proof while verification task is running.""",
@@ -260,40 +261,76 @@ async def get_cbmc_proof_loop_info(
 # ------------------------------------------------------------
 
 
-class CBMCTaskStatus(BaseModel):
-    is_running: bool
-    # TODO: maybe add more fields like stdout, stderr, etc.
-
-
-class CBMCResult(BaseModel):
+class VerificationJob(BaseModel):
     name: str
     start_time: datetime
 
 
+@router.get("/jobs")
+async def get_verification_jobs() -> list[VerificationJob]:
+    """Return list of all verification jobs."""
+    log.info("Get verification jobs")
+
+    path = Path(f"{PROOF_ROOT}/output/litani/runs")
+
+    if not path.exists():
+        return []
+
+    job_dirs = [dir for dir in path.iterdir() if dir.is_dir()]
+    start_times: list[datetime] = []
+
+    for dir in job_dirs:
+        try:
+            run_json = dir / "html/run.json"
+            run_data = json.loads(run_json.read_text())
+            # Note: python 3.10 does not allow parsing of the following iso format: 2024-02-07T13:14:50Z
+            #       therefore we need to drop the timezone information and add it manually
+            start_time = datetime.fromisoformat(run_data["start_time"][:-1])
+            # manually set timezone to UTC (without changing the time itself)
+            start_time = start_time.replace(tzinfo=timezone.utc)
+            # convert to local timezone
+            start_times.append(start_time.astimezone())
+
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            start_times.append(datetime.fromtimestamp(dir.stat().st_ctime).astimezone())
+
+    results = [
+        VerificationJob(
+            name=dir.name,
+            start_time=start_time,
+        )
+        for dir, start_time in zip(job_dirs, start_times, strict=True)
+    ]
+
+    log.debug(f"{results=}")
+
+    return sorted(results, key=lambda run: run.start_time, reverse=True)
+
+
 @router.post(
-    "/task",
+    "/jobs",
     responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
-async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
-    """Execute all CBMC proofs."""
-    global CBMC_PROOFS_TASK, CBMC_PROOFS_TASK_OUTPUT
-    log.info("Start CBMC verification task")
+async def start_verification_job(tasks: BackgroundTasks) -> VerificationJob:
+    """Start a new verification job."""
+    global VERIFICATION_JOB, VERIFICATION_JOB_OUTPUT
+    log.info("Start verification job")
 
-    if CBMC_PROOFS_TASK is not None:
+    if VERIFICATION_JOB is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Verification Task already running",
         )
 
-    num_proof_runs = _get_cbmc_verification_task_count()
+    num_proof_runs = _get_verification_job_count()
 
     # create output buffer file
-    CBMC_PROOFS_TASK_OUTPUT.parent.mkdir(exist_ok=True)
-    CBMC_PROOFS_TASK_OUTPUT.touch(exist_ok=True)
-    fd = CBMC_PROOFS_TASK_OUTPUT.open("w")
+    VERIFICATION_JOB_OUTPUT.parent.mkdir(exist_ok=True)
+    VERIFICATION_JOB_OUTPUT.touch(exist_ok=True)
+    fd = VERIFICATION_JOB_OUTPUT.open("w")
 
     # call run-cbmc-proofs.py in subprocess
-    CBMC_PROOFS_TASK = await create_subprocess_exec(
+    VERIFICATION_JOB = await create_subprocess_exec(
         "python3",
         "run-cbmc-proofs.py",
         cwd=PROOF_ROOT,
@@ -301,14 +338,14 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
         stderr=PIPE,
     )
 
-    tasks.add_task(_cleanup_verification_task, fd)
+    tasks.add_task(_cleanup_verification_job, fd)
 
-    proof_runs = await get_cbmc_verification_task_result_list()
+    proof_runs = await get_verification_jobs()
 
     # wait until litani is initialized
     while len(proof_runs) <= num_proof_runs:
         await sleep(0.5)
-        proof_runs = await get_cbmc_verification_task_result_list()
+        proof_runs = await get_verification_jobs()
 
     # if len(proof_runs) > 10:  # TODO: get from env
     #     # remove oldest run
@@ -317,25 +354,18 @@ async def start_cbmc_verification_task(tasks: BackgroundTasks) -> CBMCResult:
     return proof_runs[0]
 
 
-@router.get("/task/status")
-async def get_cbmc_verification_task_status() -> CBMCTaskStatus:
-    """Return status of CBMC proof execution."""
-    log.info("Get CBMC verification task status")
-    return CBMCTaskStatus(is_running=CBMC_PROOFS_TASK is not None)
-
-
 @router.delete(
-    "/task",
+    "/jobs/current",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
-async def cancel_cbmc_verification_task(tasks: BackgroundTasks) -> None:
-    """Cancel CBMC verification task"""
-    global CBMC_PROOFS_TASK
-    log.info("Canceling CBMC proofs")
+async def cancel_verification_job() -> None:
+    """Cancel the currently running verification job"""
+    global VERIFICATION_JOB
+    log.info("Canceling verification job")
 
-    if CBMC_PROOFS_TASK is None:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Verification Task not running")
+    if VERIFICATION_JOB is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Verification job not running")
 
     # Note: for some weird reaseon CBMC_PROOFS_TASK.terminate() does not actually terminate
     #       the process (might be because the subprocess is waiting on subprocess.run() itself).
@@ -343,32 +373,44 @@ async def cancel_cbmc_verification_task(tasks: BackgroundTasks) -> None:
     # TODO: Currently, this leaves a bunch of zombie processes behind, which should probably be
     #       fixed at some point.
 
-    proc = psutil.Process(CBMC_PROOFS_TASK.pid)
+    proc = psutil.Process(VERIFICATION_JOB.pid)
     proc.terminate()
     for child in proc.children(recursive=True):
         child.terminate()
 
 
-@router.websocket("/task/output")
-async def get_cbmc_verification_task_output(websocket: WebSocket) -> None:
-    """Return output of CBMC proof execution."""
-    log.info("Get CBMC verification task output")
+class VerificationJobStatus(BaseModel):
+    is_running: bool
+    # TODO: maybe add more fields like stdout, stderr, etc.
+
+
+@router.get("/jobs/current/status")
+async def get_verification_job_status() -> VerificationJobStatus:
+    """Return status of the currently running verification job."""
+    log.info("Get verification job status")
+    return VerificationJobStatus(is_running=VERIFICATION_JOB is not None)
+
+
+@router.websocket("/jobs/current/output")
+async def get_verification_job_output(websocket: WebSocket) -> None:
+    """Return output of the current verification job."""
+    log.info("Get verification job output")
 
     await websocket.accept()
 
-    if not CBMC_PROOFS_TASK_OUTPUT.exists():
+    if not VERIFICATION_JOB_OUTPUT.exists():
         await websocket.send_text("No output available")
         await websocket.close()
         return
 
     try:
-        with open(CBMC_PROOFS_TASK_OUTPUT, "r") as file:
+        with open(VERIFICATION_JOB_OUTPUT, "r") as file:
             # send current file contents
             for line in file:
                 await websocket.send_text(line)
 
             # send new lines as they are added until task is completed
-            while CBMC_PROOFS_TASK is not None:
+            while VERIFICATION_JOB is not None:
                 line = file.readline()
 
                 if not line:
@@ -390,7 +432,7 @@ async def get_cbmc_verification_task_output(websocket: WebSocket) -> None:
 # ------------------------------------------------------------
 
 
-class CBMCResultStats(BaseModel):
+class VerificationJobResult(BaseModel):
     # proof_name: str
     is_complete: bool = False
     status: str | None = None
@@ -398,51 +440,12 @@ class CBMCResultStats(BaseModel):
     coverage_percentage: float | None = None
 
 
-@router.get("/results")
-async def get_cbmc_verification_task_result_list() -> list[CBMCResult]:
-    """Return list of all CBMC verification task runs."""
-    log.info("Get CBMC verification task runs")
-
-    path = Path(f"{PROOF_ROOT}/output/litani/runs")
-
-    if not path.exists():
-        return []
-
-    runs = [run for run in path.iterdir() if run.is_dir()]
-    start_times: list[datetime] = []
-
-    for run in runs:
-        try:
-            run_json = run / "html/run.json"
-            run_data = json.loads(run_json.read_text())
-            # Note: python 3.10 does not allow parsing of the following iso format: 2024-02-07T13:14:50Z
-            #       therefore we need to drop the timezone information and add it manually
-            start_time = datetime.fromisoformat(run_data["start_time"][:-1])
-            # manually set timezone to UTC (without changing the time itself)
-            start_time = start_time.replace(tzinfo=timezone.utc)
-            # convert to local timezone
-            start_times.append(start_time.astimezone())
-
-        except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            start_times.append(datetime.fromtimestamp(run.stat().st_ctime).astimezone())
-
-    results = [
-        CBMCResult(
-            name=run.name,
-            start_time=start_time,
-        )
-        for run, start_time in zip(runs, start_times, strict=True)
-    ]
-
-    log.debug(f"{results=}")
-
-    return sorted(results, key=lambda run: run.start_time, reverse=True)
-
-
-@router.get("/results/{proof_name}/stats")
-async def get_latest_cbmc_verification_task_stats(proof_name: str) -> CBMCResultStats:
-    """Return statistics of latest CBMC proof execution."""
-    log.info("Get latest CBMC verification task stats")
+@router.get("/jobs/current/result/{proof_name}")
+async def get_latest_verification_job_result(
+    proof_name: str,
+) -> VerificationJobResult:
+    """Return results of the latest verification job."""
+    log.info("Get latest verification job result")
     log.debug(f"{proof_name=}")
 
     report_dir = (
@@ -451,7 +454,7 @@ async def get_latest_cbmc_verification_task_stats(proof_name: str) -> CBMCResult
 
     if not report_dir.exists():
         log.debug(f"Report not found: {report_dir}")
-        return CBMCResultStats(is_complete=False)
+        return VerificationJobResult(is_complete=False)
 
     status = None
     errors: list[str] = []
@@ -484,7 +487,7 @@ async def get_latest_cbmc_verification_task_stats(proof_name: str) -> CBMCResult
     log.debug(f"{errors=}")
     log.debug(f"{coverage_percentage=}")
 
-    return CBMCResultStats(
+    return VerificationJobResult(
         is_complete=True,
         status=status,
         errors=errors,
@@ -493,10 +496,10 @@ async def get_latest_cbmc_verification_task_stats(proof_name: str) -> CBMCResult
 
 
 @router.get(
-    "/results/{version}/download",
+    "/jobs/{version}/download",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
-async def download_cbmc_verification_task_result(
+async def download_verification_job_result(
     version: UUID4,
     tasks: BackgroundTasks,
     format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
@@ -532,11 +535,11 @@ async def download_cbmc_verification_task_result(
 
 @router.get(
     # Note: this path allows for directory browsing using relative paths (i.e. navigate the dashboard)
-    "/results/{version}/{file_path:path}",
+    "/jobs/{version}/files/{file_path:path}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
     response_model=None,
 )
-async def get_cbmc_verification_task_result(
+async def get_verification_job_result(
     request: Request,
     version: UUID4 | Literal["latest"] = "latest",
     file_path: str | None = None,
@@ -579,21 +582,21 @@ async def get_cbmc_verification_task_result(
 
 
 @router.delete(
-    "/results/{version}",
+    "/jobs/{version}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_404_NOT_FOUND: {"model": HTTPError},
         status.HTTP_409_CONFLICT: {"model": HTTPError},
     },
 )
-async def delete_cbmc_verification_task_results(version: UUID4) -> None:
-    """Delete results of CBMC proof execution."""
+async def delete_verification_job_results(version: UUID4) -> None:
+    """Delete verification job"""
     log.info("Delete CBMC verification task results")
 
     version_str = str(version).lower()
     log.debug(f"{version_str=}")
 
-    runs = await get_cbmc_verification_task_result_list()
+    runs = await get_verification_jobs()
 
     if not any(run.name == version_str for run in runs):
         raise HTTPException(
@@ -601,7 +604,7 @@ async def delete_cbmc_verification_task_results(version: UUID4) -> None:
             f"Version not found: {version_str}",
         )
 
-    if runs[0].name == version_str and CBMC_PROOFS_TASK is not None:
+    if runs[0].name == version_str and VERIFICATION_JOB is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Cannot delete result of currently running verification task.",
@@ -654,27 +657,27 @@ async def download_all_cbmc_files(
 # ------------------------------------------------------------
 
 
-async def _cleanup_verification_task(fd: TextIOWrapper) -> None:
+async def _cleanup_verification_job(fd: TextIOWrapper) -> None:
     """Buffer Task STDOUT into a file."""
-    global CBMC_PROOFS_TASK
-    log.debug("Buffering CBMC verification task output")
+    global VERIFICATION_JOB
+    log.debug("Cleanup verification job output")
 
-    _, stderr = await CBMC_PROOFS_TASK.communicate()
+    _, stderr = await VERIFICATION_JOB.communicate()
 
     fd.close()
 
-    if CBMC_PROOFS_TASK.returncode > 0:
+    if VERIFICATION_JOB.returncode > 0:
         log.error(
-            f"CBMC verification task failed with returncode {CBMC_PROOFS_TASK.returncode}: {stderr.decode('ascii')}"
+            f"CBMC verification task failed with returncode {VERIFICATION_JOB.returncode}: {stderr.decode('ascii')}"
         )
 
-    elif CBMC_PROOFS_TASK.returncode < 0:
+    elif VERIFICATION_JOB.returncode < 0:
         log.warn(
-            f"CBMC verification task cancelled by user (signal={-CBMC_PROOFS_TASK.returncode})"
+            f"CBMC verification task cancelled by user (signal={-VERIFICATION_JOB.returncode})"
         )
 
     log.info(f"CBMC verification task completed")
-    CBMC_PROOFS_TASK = None
+    VERIFICATION_JOB = None
 
 
 def _cleanup_archive_file(abs_file_path: str) -> None:
@@ -689,9 +692,9 @@ def _cleanup_tmp_dir() -> None:
     rmtree("/tmp/cbmc_data")
 
 
-def _get_cbmc_verification_task_count() -> int:
-    """Return number of CBMC verification task runs."""
-    log.info("Get number of CBMC task runs")
+def _get_verification_job_count() -> int:
+    """Return number of verification jobs."""
+    log.info("Get number of verification jobs")
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs")
 

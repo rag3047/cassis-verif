@@ -76,7 +76,7 @@ async def get_doxygen_docs(file_path: str) -> FileResponse:
     return FileResponse(abs_path)
 
 
-class DoxygenCallgraphs(BaseModel):
+class DoxygenCallgraph(BaseModel):
     file_href: Path
     callgraph: Path | None
     inverse_callgraph: Path | None
@@ -92,7 +92,7 @@ class DoxygenCallgraphs(BaseModel):
 async def get_doxygen_callgraph_image_paths(
     file_name: Annotated[str, Query(..., alias="file-name")],
     func_name: Annotated[str, Query(..., alias="func-name")],
-) -> DoxygenCallgraphs:
+) -> DoxygenCallgraph:
     """Return the paths to the doxygen callgraph images."""
     log.info("Get doxygen callgraph image paths")
     _check_doxygen_is_available()
@@ -132,7 +132,7 @@ async def get_doxygen_callgraph_image_paths(
         inverse_callgraph.relative_to(html_dir) if inverse_callgraph.exists() else None
     )
 
-    return DoxygenCallgraphs(
+    return DoxygenCallgraph(
         file_href=file_href,
         callgraph=callgraph,
         inverse_callgraph=inverse_callgraph,

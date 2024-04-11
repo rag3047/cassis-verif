@@ -15,12 +15,12 @@ from .controllers.doxygen import (
     get_doxygen_function_refs,
 )
 from .controllers.cbmc import (
-    get_cbmc_proof,
+    get_cbmc_proof_by_name,
     get_cbmc_proofs,
-    get_cbmc_verification_task_result_list,
-    get_cbmc_verification_task_status,
-    get_cbmc_proof_loop_info,
-    get_latest_cbmc_verification_task_stats,
+    get_verification_jobs,
+    get_verification_job_status,
+    get_cbmc_loop_info,
+    get_latest_verification_job_result,
 )
 
 
@@ -40,14 +40,14 @@ async def home(request: Request) -> HTMLResponse:
 
     stats = {}
     for proof in proofs:
-        stats[proof.name] = await get_latest_cbmc_verification_task_stats(proof.name)
+        stats[proof.name] = await get_latest_verification_job_result(proof.name)
 
     context = {
         "title": "Home | Cassis-Verif",
         "request": request,
         "proofs": proofs,
-        "task_status": await get_cbmc_verification_task_status(),
-        "results": await get_cbmc_verification_task_result_list(),
+        "task_status": await get_verification_job_status(),
+        "results": await get_verification_jobs(),
         "stats": stats,
     }
 
@@ -128,10 +128,10 @@ async def editor(request: Request) -> HTMLResponse:
 
     if proof_name:
         with suppress(HTTPException):
-            selected_proof = await get_cbmc_proof(proof_name)
+            selected_proof = await get_cbmc_proof_by_name(proof_name)
 
         with suppress(HTTPException):
-            loops = await get_cbmc_proof_loop_info(proof_name)
+            loops = await get_cbmc_loop_info(proof_name)
 
         with suppress(HTTPException):
             hint = await get_function_hint(proof_name)

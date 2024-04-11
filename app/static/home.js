@@ -52,7 +52,7 @@ async function delete_result() {
 confirm_delete_result_modal.addEventListener("close", async () => {
     if (confirm_delete_result_modal.returnValue != "cancel") {
         try {
-            await fetch(`api/v1/cbmc/results/${confirm_delete_result_modal.returnValue}`, {
+            await fetch(`api/v1/cbmc/jobs/${confirm_delete_result_modal.returnValue}`, {
                 method: "DELETE",
             });
         } catch (err) {
@@ -381,7 +381,7 @@ async function run_all_proofs() {
     let response;
 
     try {
-        response = await fetch(`api/v1/cbmc/task`, {
+        response = await fetch(`api/v1/cbmc/jobs`, {
             method: "POST",
         }).then((res) => res.json());
     } catch (err) {
@@ -404,7 +404,7 @@ async function run_all_proofs() {
 async function cancel_proof_run() {
     let response;
     try {
-        response = await fetch(`api/v1/cbmc/task`, {
+        response = await fetch(`api/v1/cbmc/jobs/current`, {
             method: "DELETE",
         });
     } catch (err) {
