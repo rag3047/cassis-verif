@@ -33,8 +33,8 @@ DATA_DIR = getenv("DATA_DIR")
 PROOF_ROOT = getenv("PROOF_ROOT")
 CBMC_ROOT = getenv("CBMC_ROOT")
 
-VERIFICATION_JOB: Process | None = None
-VERIFICATION_JOB_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
+VERIFICATION_TASK: Process | None = None
+VERIFICATION_TASK_OUTPUT = Path(PROOF_ROOT) / "output/output.txt"
 
 RE_HARNESS_FILE = re.compile(r"^HARNESS_FILE\s+=\s+(?P<name>.+)$", re.MULTILINE)
 RE_LOOP_NAME = re.compile(r"^Loop (?P<name>.+):$", re.MULTILINE)
@@ -153,12 +153,12 @@ async def delete_cbmc_proof(proof_name: str) -> None:
     """Delete CBMC proof."""
     log.info(f"Deleting CBMC proof '{proof_name}'")
 
-    if VERIFICATION_JOB is not None:
+    if VERIFICATION_TASK is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             """
-            Cannot delete proof while verification job is running.
-            Wait until job is completed or cancel job.
+            Cannot delete proof while verification task is running.
+            Wait until task is completed or cancel task.
             """,
         )
 
@@ -196,7 +196,7 @@ async def get_cbmc_loop_info(
 
     # only build goto binary if it doesn't exist or rebuild is True
     if rebuild or not goto_binary.exists():
-        if VERIFICATION_JOB is not None:
+        if VERIFICATION_TASK is not None:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 """Cannot rebuild proof while verification task is running.""",
@@ -261,25 +261,25 @@ async def get_cbmc_loop_info(
 # ------------------------------------------------------------
 
 
-class VerificationJob(BaseModel):
+class VerificationTask(BaseModel):
     name: str
     start_time: datetime
 
 
-@router.get("/jobs")
-async def get_verification_jobs() -> list[VerificationJob]:
-    """Return list of all verification jobs."""
-    log.info("Get verification jobs")
+@router.get("/tasks")
+async def get_verification_tasks() -> list[VerificationTask]:
+    """Return list of all verification tasks."""
+    log.info("Get verification tasks")
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs")
 
     if not path.exists():
         return []
 
-    job_dirs = [dir for dir in path.iterdir() if dir.is_dir()]
+    task_dirs = [dir for dir in path.iterdir() if dir.is_dir()]
     start_times: list[datetime] = []
 
-    for dir in job_dirs:
+    for dir in task_dirs:
         try:
             run_json = dir / "html/run.json"
             run_data = json.loads(run_json.read_text())
@@ -295,11 +295,11 @@ async def get_verification_jobs() -> list[VerificationJob]:
             start_times.append(datetime.fromtimestamp(dir.stat().st_ctime).astimezone())
 
     results = [
-        VerificationJob(
+        VerificationTask(
             name=dir.name,
             start_time=start_time,
         )
-        for dir, start_time in zip(job_dirs, start_times, strict=True)
+        for dir, start_time in zip(task_dirs, start_times, strict=True)
     ]
 
     log.debug(f"{results=}")
@@ -308,29 +308,29 @@ async def get_verification_jobs() -> list[VerificationJob]:
 
 
 @router.post(
-    "/jobs",
+    "/tasks",
     responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
-async def start_verification_job(tasks: BackgroundTasks) -> VerificationJob:
-    """Start a new verification job."""
-    global VERIFICATION_JOB, VERIFICATION_JOB_OUTPUT
-    log.info("Start verification job")
+async def start_verification_task(tasks: BackgroundTasks) -> VerificationTask:
+    """Start a new verification task."""
+    global VERIFICATION_TASK, VERIFICATION_TASK_OUTPUT
+    log.info("Start verification task")
 
-    if VERIFICATION_JOB is not None:
+    if VERIFICATION_TASK is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Verification Task already running",
         )
 
-    num_proof_runs = _get_verification_job_count()
+    num_proof_runs = _get_verification_task_count()
 
     # create output buffer file
-    VERIFICATION_JOB_OUTPUT.parent.mkdir(exist_ok=True)
-    VERIFICATION_JOB_OUTPUT.touch(exist_ok=True)
-    fd = VERIFICATION_JOB_OUTPUT.open("w")
+    VERIFICATION_TASK_OUTPUT.parent.mkdir(exist_ok=True)
+    VERIFICATION_TASK_OUTPUT.touch(exist_ok=True)
+    fd = VERIFICATION_TASK_OUTPUT.open("w")
 
     # call run-cbmc-proofs.py in subprocess
-    VERIFICATION_JOB = await create_subprocess_exec(
+    VERIFICATION_TASK = await create_subprocess_exec(
         "python3",
         "run-cbmc-proofs.py",
         cwd=PROOF_ROOT,
@@ -338,14 +338,14 @@ async def start_verification_job(tasks: BackgroundTasks) -> VerificationJob:
         stderr=PIPE,
     )
 
-    tasks.add_task(_cleanup_verification_job, fd)
+    tasks.add_task(_cleanup_verification_task, fd)
 
-    proof_runs = await get_verification_jobs()
+    proof_runs = await get_verification_tasks()
 
     # wait until litani is initialized
     while len(proof_runs) <= num_proof_runs:
         await sleep(0.5)
-        proof_runs = await get_verification_jobs()
+        proof_runs = await get_verification_tasks()
 
     # if len(proof_runs) > 10:  # TODO: get from env
     #     # remove oldest run
@@ -355,17 +355,17 @@ async def start_verification_job(tasks: BackgroundTasks) -> VerificationJob:
 
 
 @router.delete(
-    "/jobs/current",
+    "/tasks/current",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={status.HTTP_409_CONFLICT: {"model": HTTPError}},
 )
-async def cancel_verification_job() -> None:
-    """Cancel the currently running verification job"""
-    global VERIFICATION_JOB
-    log.info("Canceling verification job")
+async def cancel_verification_task() -> None:
+    """Cancel the currently running verification task"""
+    global VERIFICATION_TASK
+    log.info("Canceling verification task")
 
-    if VERIFICATION_JOB is None:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Verification job not running")
+    if VERIFICATION_TASK is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Verification task not running")
 
     # Note: for some weird reaseon CBMC_PROOFS_TASK.terminate() does not actually terminate
     #       the process (might be because the subprocess is waiting on subprocess.run() itself).
@@ -373,44 +373,44 @@ async def cancel_verification_job() -> None:
     # TODO: Currently, this leaves a bunch of zombie processes behind, which should probably be
     #       fixed at some point.
 
-    proc = psutil.Process(VERIFICATION_JOB.pid)
+    proc = psutil.Process(VERIFICATION_TASK.pid)
     proc.terminate()
     for child in proc.children(recursive=True):
         child.terminate()
 
 
-class VerificationJobStatus(BaseModel):
+class VerificationTaskStatus(BaseModel):
     is_running: bool
     # TODO: maybe add more fields like stdout, stderr, etc.
 
 
-@router.get("/jobs/current/status")
-async def get_verification_job_status() -> VerificationJobStatus:
-    """Return status of the currently running verification job."""
-    log.info("Get verification job status")
-    return VerificationJobStatus(is_running=VERIFICATION_JOB is not None)
+@router.get("/tasks/current/status")
+async def get_verification_task_status() -> VerificationTaskStatus:
+    """Return status of the currently running verification task."""
+    log.info("Get verification task status")
+    return VerificationTaskStatus(is_running=VERIFICATION_TASK is not None)
 
 
-@router.websocket("/jobs/current/output")
-async def get_verification_job_output(websocket: WebSocket) -> None:
-    """Return output of the current verification job."""
-    log.info("Get verification job output")
+@router.websocket("/tasks/current/output")
+async def get_verification_task_output(websocket: WebSocket) -> None:
+    """Return output of the current verification task."""
+    log.info("Get verification task output")
 
     await websocket.accept()
 
-    if not VERIFICATION_JOB_OUTPUT.exists():
+    if not VERIFICATION_TASK_OUTPUT.exists():
         await websocket.send_text("No output available")
         await websocket.close()
         return
 
     try:
-        with open(VERIFICATION_JOB_OUTPUT, "r") as file:
+        with open(VERIFICATION_TASK_OUTPUT, "r") as file:
             # send current file contents
             for line in file:
                 await websocket.send_text(line)
 
             # send new lines as they are added until task is completed
-            while VERIFICATION_JOB is not None:
+            while VERIFICATION_TASK is not None:
                 line = file.readline()
 
                 if not line:
@@ -432,7 +432,7 @@ async def get_verification_job_output(websocket: WebSocket) -> None:
 # ------------------------------------------------------------
 
 
-class VerificationJobResult(BaseModel):
+class VerificationResult(BaseModel):
     # proof_name: str
     is_complete: bool = False
     status: str | None = None
@@ -440,12 +440,12 @@ class VerificationJobResult(BaseModel):
     coverage_percentage: float | None = None
 
 
-@router.get("/jobs/current/result/{proof_name}")
-async def get_latest_verification_job_result(
+@router.get("/tasks/current/result/{proof_name}")
+async def get_latest_verification_result(
     proof_name: str,
-) -> VerificationJobResult:
-    """Return results of the latest verification job."""
-    log.info("Get latest verification job result")
+) -> VerificationResult:
+    """Return results of the latest verification task."""
+    log.info("Get latest verification task result")
     log.debug(f"{proof_name=}")
 
     report_dir = (
@@ -454,7 +454,7 @@ async def get_latest_verification_job_result(
 
     if not report_dir.exists():
         log.debug(f"Report not found: {report_dir}")
-        return VerificationJobResult(is_complete=False)
+        return VerificationResult(is_complete=False)
 
     status = None
     errors: list[str] = []
@@ -487,7 +487,7 @@ async def get_latest_verification_job_result(
     log.debug(f"{errors=}")
     log.debug(f"{coverage_percentage=}")
 
-    return VerificationJobResult(
+    return VerificationResult(
         is_complete=True,
         status=status,
         errors=errors,
@@ -496,10 +496,10 @@ async def get_latest_verification_job_result(
 
 
 @router.get(
-    "/jobs/{version}/download",
+    "/tasks/{version}/download",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
 )
-async def download_verification_job_result(
+async def download_verification_task_result(
     version: UUID4,
     tasks: BackgroundTasks,
     format: Literal["zip", "tar", "gztar", "bztar", "xztar"] = "zip",
@@ -535,11 +535,11 @@ async def download_verification_job_result(
 
 @router.get(
     # Note: this path allows for directory browsing using relative paths (i.e. navigate the dashboard)
-    "/jobs/{version}/files/{file_path:path}",
+    "/tasks/{version}/files/{file_path:path}",
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPError}},
     response_model=None,
 )
-async def get_verification_job_result(
+async def get_verification_task_result(
     request: Request,
     version: UUID4 | Literal["latest"] = "latest",
     file_path: str | None = None,
@@ -582,21 +582,21 @@ async def get_verification_job_result(
 
 
 @router.delete(
-    "/jobs/{version}",
+    "/tasks/{version}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_404_NOT_FOUND: {"model": HTTPError},
         status.HTTP_409_CONFLICT: {"model": HTTPError},
     },
 )
-async def delete_verification_job_results(version: UUID4) -> None:
-    """Delete verification job"""
+async def delete_verification_task_results(version: UUID4) -> None:
+    """Delete verification task"""
     log.info("Delete CBMC verification task results")
 
     version_str = str(version).lower()
     log.debug(f"{version_str=}")
 
-    runs = await get_verification_jobs()
+    runs = await get_verification_tasks()
 
     if not any(run.name == version_str for run in runs):
         raise HTTPException(
@@ -604,7 +604,7 @@ async def delete_verification_job_results(version: UUID4) -> None:
             f"Version not found: {version_str}",
         )
 
-    if runs[0].name == version_str and VERIFICATION_JOB is not None:
+    if runs[0].name == version_str and VERIFICATION_TASK is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Cannot delete result of currently running verification task.",
@@ -657,27 +657,27 @@ async def download_all_cbmc_files(
 # ------------------------------------------------------------
 
 
-async def _cleanup_verification_job(fd: TextIOWrapper) -> None:
+async def _cleanup_verification_task(fd: TextIOWrapper) -> None:
     """Buffer Task STDOUT into a file."""
-    global VERIFICATION_JOB
-    log.debug("Cleanup verification job output")
+    global VERIFICATION_TASK
+    log.debug("Cleanup verification task output")
 
-    _, stderr = await VERIFICATION_JOB.communicate()
+    _, stderr = await VERIFICATION_TASK.communicate()
 
     fd.close()
 
-    if VERIFICATION_JOB.returncode > 0:
+    if VERIFICATION_TASK.returncode > 0:
         log.error(
-            f"CBMC verification task failed with returncode {VERIFICATION_JOB.returncode}: {stderr.decode('ascii')}"
+            f"CBMC verification task failed with returncode {VERIFICATION_TASK.returncode}: {stderr.decode('ascii')}"
         )
 
-    elif VERIFICATION_JOB.returncode < 0:
+    elif VERIFICATION_TASK.returncode < 0:
         log.warn(
-            f"CBMC verification task cancelled by user (signal={-VERIFICATION_JOB.returncode})"
+            f"CBMC verification task cancelled by user (signal={-VERIFICATION_TASK.returncode})"
         )
 
     log.info(f"CBMC verification task completed")
-    VERIFICATION_JOB = None
+    VERIFICATION_TASK = None
 
 
 def _cleanup_archive_file(abs_file_path: str) -> None:
@@ -692,9 +692,9 @@ def _cleanup_tmp_dir() -> None:
     rmtree("/tmp/cbmc_data")
 
 
-def _get_verification_job_count() -> int:
-    """Return number of verification jobs."""
-    log.info("Get number of verification jobs")
+def _get_verification_task_count() -> int:
+    """Return number of verification task."""
+    log.info("Get number of verification task")
 
     path = Path(f"{PROOF_ROOT}/output/litani/runs")
 

@@ -37,9 +37,8 @@ Currently the following presets are available:
 
 - **default**: The default preset, which offers no additional build stage or resources.
 - **cassis**: The cassis preset, which pre-provisions the Colour and Stereo Sturface Imaging System (CaSSIS) flight software used on the ExoMars Trace Gas Orbiter. It includes the following features:
-  - The cassis software design document PDF.
-  - The cassis source code.
-  - Prebuilt RTEMS sources.
+  - ~~The cassis software design document PDF.~~ (for confidentiality reasons this file was removed from the repo)
+  - ~~The cassis source code.~~ (for confidentiality reasons this file was removed from the repo)
   - Prebuilt AI Hints.
   - Preconfigured compiler flags for RTEMS.
 - **suchai**: TODO
@@ -78,3 +77,10 @@ Optionally, the preset folder can contain the following files (Note: file names 
 #### Preset Build Stage
 
 At the very least, the preset build stage must create an output folder in the containers root folder (`/output`). All the content of this output folder will be copied to the *Cassis-Verif* container's `preset` folder (preserving the origianl folder structure). From there it can be accessed like any other third party dependency (e.g. using the `project-defines.json` to pre-provision include directories). Other than that, the preset build stage can be used to build any kind of dependencies that require building from source (e.g. custom operating system files like ROTS). Check the `default` preset build stage for a minimal build stage.
+
+## ThirdParty Libraries
+
+- Monaco Editor: <https://github.com/microsoft/monaco-editor>
+- PDF.JS: <https://github.com/mozilla/pdf.js>
+- NiceSelect2: <https://github.com/bluzky/nice-select2>
+- TreeJS: <https://github.com/m-thalmann/treejs>

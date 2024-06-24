@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import ChainableUndefined
 from logging import getLogger
 from contextlib import suppress
+from asyncio import gather
 
 from .controllers.hints import get_function_hint
 from .controllers.sdd import get_sdd_available
@@ -17,10 +18,10 @@ from .controllers.doxygen import (
 from .controllers.cbmc import (
     get_cbmc_proof_by_name,
     get_cbmc_proofs,
-    get_verification_jobs,
-    get_verification_job_status,
+    get_verification_tasks,
+    get_verification_task_status,
     get_cbmc_loop_info,
-    get_latest_verification_job_result,
+    get_latest_verification_result,
 )
 
 
@@ -40,14 +41,14 @@ async def home(request: Request) -> HTMLResponse:
 
     stats = {}
     for proof in proofs:
-        stats[proof.name] = await get_latest_verification_job_result(proof.name)
+        stats[proof.name] = await get_latest_verification_result(proof.name)
 
     context = {
         "title": "Home | Cassis-Verif",
         "request": request,
         "proofs": proofs,
-        "task_status": await get_verification_job_status(),
-        "results": await get_verification_jobs(),
+        "task_status": await get_verification_task_status(),
+        "results": await get_verification_tasks(),
         "stats": stats,
     }
 
@@ -114,9 +115,9 @@ async def doxygen(request: Request) -> HTMLResponse:
 async def editor(request: Request) -> HTMLResponse:
     log.info("Rendering editor page")
 
-    file_name = request.query_params.get("file-name", None)
+    file_path = request.query_params.get("file-name", None)
     proof_name = request.query_params.get("proof-name", None)
-    log.debug(f"{file_name=}")
+    log.debug(f"{file_path=}")
     log.debug(f"{proof_name=}")
 
     selected_proof = None
@@ -128,31 +129,22 @@ async def editor(request: Request) -> HTMLResponse:
 
     if proof_name:
         with suppress(HTTPException):
-            selected_proof = await get_cbmc_proof_by_name(proof_name)
-
-        with suppress(HTTPException):
-            loops = await get_cbmc_loop_info(proof_name)
-
-        with suppress(HTTPException):
-            hint = await get_function_hint(proof_name)
-
-    if proof_name and file_name and file_name != "None":
-        with suppress(HTTPException):
-            callgraphs = await get_doxygen_callgraph_image_paths(
-                file_name.split("/")[-1],
-                proof_name,
+            [selected_proof, loops, hint] = await gather(
+                get_cbmc_proof_by_name(proof_name),
+                get_cbmc_loop_info(proof_name),
+                get_function_hint(proof_name),
+                # return_exceptions=True,
             )
 
-        with suppress(HTTPException):
-            params = await get_doxygen_function_params(
-                file_name.split("/")[-1],
-                proof_name,
-            )
+    if proof_name and file_path and file_path != "None":
+        file_name = file_path.split("/")[-1]
 
         with suppress(HTTPException):
-            references = await get_doxygen_function_refs(
-                file_name.split("/")[-1],
-                proof_name,
+            [callgraphs, params, references] = await gather(
+                get_doxygen_callgraph_image_paths(file_name, proof_name),
+                get_doxygen_function_params(file_name, proof_name),
+                get_doxygen_function_refs(file_name, proof_name),
+                # return_exceptions=True,
             )
 
     log.debug(f"{selected_proof=}")

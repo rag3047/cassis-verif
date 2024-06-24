@@ -540,7 +540,7 @@ async function refresh_hints(hard_refresh = false) {
             fetch(`api/v1/doxygen/callgraphs?${get_params}`),
             fetch(`api/v1/doxygen/function-params?${get_params}`),
             fetch(`api/v1/doxygen/function-refs?${get_params}`),
-            fetch(`api/v1/hints/function/${proof_name}`),
+            fetch(`api/v1/hints/function/${proof_name}`),$
         ]).then((responses) => Promise.all(responses.map((response) => response.json())));
     } catch (err) {
         console.error(err);

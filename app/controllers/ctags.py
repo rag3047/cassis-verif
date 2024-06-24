@@ -33,6 +33,7 @@ async def get_functions(
     """Return list of all functions in all source files."""
 
     log.info("Reading functions from disk")
+    # TODO: cache this and refresh on git pull?
     tags = repository.function_tags(DATA_DIR)
 
     cbmc_dir = Path(DATA_DIR) / "cbmc"
